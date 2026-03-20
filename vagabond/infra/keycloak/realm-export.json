@@ -1,0 +1,36 @@
+{
+  "realm": "vagabond",
+  "enabled": true,
+  "displayName": "Vagabond",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionMaxLifespan": 36000,
+  "clients": [
+    {
+      "clientId": "vagabond-web",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "vagabond-user",  "description": "Standard user" },
+      { "name": "vagabond-admin", "description": "Admin user" }
+    ]
+  }
+}

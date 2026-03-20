@@ -1,0 +1,51 @@
+// agent/alloy-config/config.alloy
+// Grafana Alloy configuration for the Vagabond RPi telemetry agent.
+// Reads GPS from NMEA serial or gpsd, packages as OTLP, ships to vagabond-server.
+// Uses Alloy WAL for offline buffering — queues locally when connectivity is absent.
+
+// ── OTLP exporter → vagabond-server ──────────────────────────────────────────
+otelcol.exporter.otlphttp "vagabond" {
+  client {
+    endpoint = env("VAGABOND_INGEST_URL") // e.g. http://192.168.1.x:3001/api/v1/telemetry/ingest
+
+    // Retry + WAL: Alloy will buffer to disk when the server is unreachable
+    retry_on_failure {
+      enabled          = true
+      initial_interval = "5s"
+      max_interval     = "30s"
+      max_elapsed_time = "0s"   // retry forever
+    }
+  }
+}
+
+// ── GPS source (TODO: implement NMEA scraper component) ───────────────────────
+// Two options depending on hardware setup:
+//   Option A: Direct serial (USB GPS puck) — read NMEA sentences from /dev/ttyUSB0
+//   Option B: gpsd socket — connect to gpsd and parse TPV reports
+//
+// Placeholder: local.file component reads a simulated NMEA file for testing
+local.file "gps_sim" {
+  filename  = env("GPS_SIM_FILE") // set to /dev/null in production; use real component
+  is_secret = false
+}
+
+// ── System metrics (power stats) ─────────────────────────────────────────────
+prometheus.exporter.unix "node" {
+  // Exposes CPU, memory, filesystem stats from the RPi
+}
+
+prometheus.scrape "node_metrics" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [otelcol.receiver.prometheus.default.receiver]
+}
+
+otelcol.receiver.prometheus "default" {
+  output {
+    metrics = [otelcol.exporter.otlphttp.vagabond.input]
+  }
+}
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+// Full NMEA → OTLP pipeline to be implemented in v0.2.
+// See docs/adr/ADR-002 for the telemetry architecture.
+// Victron/Jackery power stats: wire via Modbus or vendor API → custom Alloy component.
