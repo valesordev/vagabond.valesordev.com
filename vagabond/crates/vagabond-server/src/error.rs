@@ -6,7 +6,8 @@ use axum::{
 use serde_json::json;
 use vagabond_core::VagabondError;
 
-/// Wrapper so we can implement IntoResponse for domain errors.
+/// Wrapper so we can implement [`IntoResponse`] for domain errors.
+#[derive(Debug)]
 pub struct ApiError(pub VagabondError);
 
 impl From<VagabondError> for ApiError {
@@ -23,6 +24,7 @@ impl IntoResponse for ApiError {
 
         let body = Json(json!({
             "data": null,
+            "meta": null,
             "error": {
                 "code":    code,
                 "message": message,

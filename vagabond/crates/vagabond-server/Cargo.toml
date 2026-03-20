@@ -27,3 +27,12 @@ anyhow        = { workspace = true }
 tracing               = { workspace = true }
 tracing-subscriber    = { workspace = true }
 dotenvy       = { workspace = true }
+
+[dev-dependencies]
+axum           = { workspace = true }
+http-body-util = "0.1"
+serde_json     = { workspace = true }
+sqlx           = { workspace = true }
+tokio          = { workspace = true }
+tower          = { workspace = true, features = ["util"] }
+uuid           = { workspace = true }
