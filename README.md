@@ -1,97 +1,140 @@
 # Vagabond
 
-A self-hosted, offline-first trip planning and live tracking platform for overlanders,
-vanlifers, and nomadic travelers. MIT licensed. Docker Compose deployable. No cloud
-lock-in. No proprietary map providers.
+Self-hosted, offline-first trip planning and live tracking for overlanders, vanlifers, and
+backcountry travelers.
 
-> **Status:** Pre-MVP — core scaffolding is in place; features are actively being built.
-
----
-
-## Core Principles
-
-1. **Offline-first** — every feature works (or degrades gracefully) without connectivity
-2. **Self-hosted** — single `docker compose up`; you own your data
-3. **Spatial-native** — all geo logic runs through PostGIS; no app-layer coordinate math
-4. **Open standards** — GPX, GeoJSON, OSM, PMTiles, MapLibre, NMEA 0183 throughout
+**MIT License** · Rust + Next.js · PostGIS/MapLibre · Docker Compose
 
 ---
 
-## Tech Stack
+## Features (v0.1 MVP)
 
-| Layer | Choice |
-|-------|--------|
-| Backend | Rust / Axum / SQLx |
-| Database | PostgreSQL 16 + PostGIS 3.x |
-| Tile server | Martin (MVT over PostGIS) |
-| Frontend | Next.js 15 App Router / TypeScript |
-| Map engine | MapLibre GL JS + PMTiles |
-| State | Zustand (map) + React Query (server data) |
-| UI | shadcn/ui + Tailwind |
-| Auth | Keycloak (OIDC) |
-| Object storage | MinIO (S3-compatible) |
-| Telemetry agent | Grafana Alloy on Raspberry Pi (OTLP ingest) |
-| Observability | Grafana (optional) |
-| Deployment | Docker Compose |
+- Trip planning with waypoints, legs, and campsite tracking
+- Gear inventory tied to your rig profile
+- GPX route import → PostGIS storage
+- Offline map via PMTiles (OSM base layer, no API keys required)
+- Single-command Docker Compose deploy
+
+**Roadmap**: live telemetry (v0.2), community campsite database (v0.3)
 
 ---
 
 ## Quick Start
 
 ```bash
-# Core stack (server, web, postgres, martin)
-docker compose up
+# 1. Clone
+git clone https://github.com/YOUR_ORG/vagabond.git && cd vagabond
 
-# With auth
-docker compose --profile auth up
+# 2. Configure
+cp .env.example .env
+# Edit .env — at minimum set POSTGRES_PASSWORD and JWT_SECRET
 
-# With object storage
-docker compose --profile storage up
+# 3. Launch core stack
+docker compose up -d
 
-# With observability (Grafana, Prometheus)
-docker compose --profile observability up
-
-# Everything
-docker compose --profile full up
+# 4. Open
+open http://localhost:3000
 ```
 
-Copy `.env.example` to `.env` and configure before first run.
+API is at `http://localhost:3001` · Tile server at `http://localhost:3002`
+
+### With auth (Keycloak)
+
+```bash
+docker compose --profile auth up -d
+```
+
+### Full stack (everything)
+
+```bash
+docker compose --profile full up -d
+```
 
 ---
 
-## Repo Structure
+## Architecture
+
+See [`docs/adr/`](docs/adr/) for Architecture Decision Records.
 
 ```
-vagabond.solo7.media/
-├── vagabond/                  # App source code
-│   ├── Cargo.toml             # Rust workspace root
-│   ├── docker-compose.yml
-│   ├── crates/
-│   │   ├── vagabond-core/     # Domain types (no infra deps)
-│   │   ├── vagabond-server/   # Axum HTTP server + migrations
-│   │   ├── vagabond-gear/     # Gear inventory domain
-│   │   └── vagabond-telemetry/ # Telemetry ingest
-│   ├── web/vagabond-web/      # Next.js frontend
-│   ├── agent/alloy-config/    # Raspberry Pi Alloy agent config
-│   ├── docs/adr/              # Architecture Decision Records
-│   └── infra/                 # Grafana, Keycloak, Prometheus configs
-├── trips/                     # Trip planning documents and maps
-├── buildout/                  # Vehicle build BOM and diagrams
-└── images/                    # Trip photos
+vagabond/
+├── crates/
+│   ├── vagabond-core/        # Domain types — zero infra deps
+│   ├── vagabond-server/      # Axum HTTP API + migrations
+│   ├── vagabond-gear/        # Gear inventory domain
+│   └── vagabond-telemetry/   # OTLP ingest (v0.2)
+├── web/
+│   └── vagabond-web/         # Next.js frontend (MapLibre, PMTiles)
+├── agent/
+│   └── alloy-config/         # Grafana Alloy config for RPi agent
+├── infra/
+│   ├── keycloak/             # Realm export for local dev
+│   ├── prometheus/           # Scrape config
+│   └── grafana/              # Dashboard provisioning
+└── docker-compose.yml
+```
+
+### Tech Stack
+
+| Layer | Choice |
+|-------|--------|
+| Backend | Rust · Axum · SQLx |
+| Database | PostgreSQL 16 + PostGIS 3.x |
+| Tile server | Martin (MVT over PostGIS) |
+| Frontend | Next.js 14 · MapLibre GL JS · Tailwind |
+| Offline tiles | PMTiles (OSM base) |
+| Auth | Keycloak (OIDC — any provider works) |
+| Telemetry agent | Grafana Alloy on Raspberry Pi |
+
+---
+
+## Geo Standards
+
+All formats are open (ADR-005):
+**GPX** import/export · **GeoJSON** API wire format · **OSM** map data ·
+**PMTiles** offline tiles · **MapLibre** renderer · **NMEA 0183** GPS input
+
+---
+
+## Development
+
+### Prerequisites
+
+- Rust 1.77+
+- Node.js 20+
+- Docker + Docker Compose v2
+
+### Local dev (without Docker)
+
+```bash
+# Backend
+cp .env.example .env  # set DATABASE_URL to a local PG instance
+cargo build
+cargo run -p vagabond-server
+
+# Frontend
+cd web/vagabond-web
+npm install
+npm run dev
+```
+
+### Running tests
+
+```bash
+cargo test                  # all workspace tests
+cargo clippy -- -D warnings # lint (CI enforced)
+cargo fmt --check           # format check (CI enforced)
 ```
 
 ---
 
 ## Contributing
 
-See [`vagabond/CONTRIBUTING.md`](vagabond/CONTRIBUTING.md).
-
-Short version: open an issue before large PRs, follow Conventional Commits, write an ADR
-for any decision affecting the domain model or infrastructure, and keep all geo logic in
-PostGIS.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Open an issue before large PRs.
+Write an ADR for any architectural decision before implementing it.
 
 ---
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT — see [LICENSE](LICENSE)

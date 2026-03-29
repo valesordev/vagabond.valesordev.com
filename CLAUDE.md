@@ -1,11 +1,9 @@
 # CLAUDE.md — Vagabond Project Working Memory
 
-This file is the persistent context for all Cowork sessions on the Vagabond project.
-Load it at the start of every session — it covers app development, trip planning, and rig context.
+This file is the persistent context for app development sessions on the Vagabond project.
 
-> **Skill**: Always invoke the `vagabond-assistant` skill for any work in this workspace.
-> It will load the detailed reference files (`app-architecture.md`, `project-standards.md`,
-> `rig-profile.md`, `camping-regions.md`) from `vagabond-assistant/references/`.
+> **Note**: Planning docs, trip logs, buildout files, rig profile, and camping region references
+> have moved to `life.solo7.media/vagabond/`. This repo now contains only the application source code.
 
 ---
 
@@ -37,7 +35,7 @@ deployment target. No cloud lock-in. No proprietary map providers.
 
 ### What exists and is scaffolded:
 
-**Rust workspace** (`vagabond/`) — workspace `Cargo.toml` with 4 crates:
+**Rust workspace** — workspace `Cargo.toml` with 4 crates:
 - `crates/vagabond-core` — domain types (`trip.rs`, `rig.rs`, `geo.rs`, `error.rs`); zero infra deps
 - `crates/vagabond-server` — Axum server with `/health` + `/api/v1` router; migrations wired up; config, state, error modules
 - `crates/vagabond-gear` — gear inventory domain; `lib.rs` + `repository.rs`
@@ -159,12 +157,6 @@ For **app development sessions:**
 - [ ] Review open MVP backlog items above
 - [ ] Write ADR before implementing any architectural decision
 
-For **trip planning sessions:**
-- [ ] Invoke `vagabond-assistant` skill
-- [ ] Load `references/camping-regions.md` and `references/rig-profile.md`
-- [ ] Check current season viability for target region
-- [ ] Generate trip-specific gear manifest against rig inventory
-
 ---
 
 ## Key File Locations
@@ -172,24 +164,18 @@ For **trip planning sessions:**
 ```
 vagabond.solo7.media/
 ├── CLAUDE.md                          ← this file
-├── vagabond/                          ← app source code
-│   ├── Cargo.toml                     ← workspace root
-│   ├── docker-compose.yml
-│   ├── crates/
-│   │   ├── vagabond-core/
-│   │   ├── vagabond-server/
-│   │   ├── vagabond-gear/
-│   │   └── vagabond-telemetry/
-│   ├── web/vagabond-web/              ← Next.js frontend
-│   ├── agent/alloy-config/            ← Raspberry Pi Alloy config
-│   ├── docs/adr/                      ← Architecture Decision Records
-│   └── infra/                         ← Grafana, Keycloak, Prometheus configs
-├── trips/                             ← trip planning documents + maps
-├── buildout/                          ← 4Runner build BOM + diagrams
-├── images/                            ← trip photos
-└── vagabond-assistant/references/     ← detailed skill reference docs
-    ├── app-architecture.md
-    ├── project-standards.md
-    ├── rig-profile.md
-    └── camping-regions.md
+├── Cargo.toml                         ← workspace root
+├── docker-compose.yml
+├── crates/
+│   ├── vagabond-core/                 ← domain types, zero infra deps
+│   ├── vagabond-server/               ← Axum HTTP API + migrations
+│   ├── vagabond-gear/                 ← gear inventory domain
+│   └── vagabond-telemetry/            ← OTLP ingest (v0.2)
+├── web/vagabond-web/                  ← Next.js frontend
+├── agent/alloy-config/                ← Raspberry Pi Alloy config
+├── docs/adr/                          ← Architecture Decision Records
+└── infra/                             ← Grafana, Keycloak, Prometheus configs
 ```
+
+**Trip planning docs, buildout files, rig profile, and camping region references** →
+`life.solo7.media/vagabond/`
