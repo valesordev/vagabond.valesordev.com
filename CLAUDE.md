@@ -121,7 +121,7 @@ File at `docs/adr/ADR-NNN-short-title.md`. Template at `docs/adr/ADR-000-templat
 | Fuel range | ~400mi (23gal tank) — plan fuel stops every 200mi remote |
 | Sleep | Foam mat on cargo floor (functional now); platform build is backlog |
 | Power total | 3,162 Wh (Jackery 1000 + 2000) |
-| Solar | 400W peak (2× EcoFlow SolarSaga 200W) → ~240–300 Wh/day desert |
+| Solar | 400W peak (2× Jackery SolarSaga 200W) → ~1,800 Wh/day desert (300W avg × 6hr peak) |
 | Fridge | BougeRV 23qt 12V compressor cooler (~40W draw) |
 | Connectivity | Starlink portable (~50–75W active); Raspberry Pi Alloy agent |
 | Navigation | OsmAnd (primary, FOSS, offline OSM, GPX-native) |
