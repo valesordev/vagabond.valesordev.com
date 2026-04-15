@@ -1,0 +1,23 @@
+---
+description: Repo-wide governance for docs-first coordination workflows
+alwaysApply: true
+---
+
+# Repo Governance
+
+- Treat this repository as planning and documentation first.
+- Do not implement application runtime code in this repo except inside intended submodules.
+- Before editing in `vagabond/app/` or `valesor/www.*` submodules, explicitly confirm the target repo boundary and task intent.
+- Prefer updating tracker artifacts (`personal/project-tracker/`) when work changes project status, priorities, or automation state.
+
+## Safety Checks
+
+- If a request might modify app code outside submodules, stop and redirect to the correct app repository path.
+- Preserve unrelated in-progress changes; never revert user work unless explicitly requested.
+- Keep edits scoped to the smallest set of files that satisfy the request.
+
+## Commit Guidance
+
+- Use concise, intent-first commit messages (Conventional Commits preferred).
+- For tracker updates, use scopes like `tracker`, `docs`, `rules`, or `skills`.
+- Mention the reason for the change, not only the files touched.

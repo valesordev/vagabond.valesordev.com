@@ -1,0 +1,25 @@
+---
+description: Vagabond documentation and planning guardrails
+globs: vagabond/**
+alwaysApply: false
+---
+
+# Vagabond DocOps Rule
+
+- Treat `vagabond/` as planning + coordination unless the task explicitly targets `vagabond/app/` submodule code.
+- For architecture, API shape, or infrastructure changes, require ADR-first behavior before proposing implementation details.
+- Cross-check proposals against active MVP backlog items before introducing net-new feature scope.
+
+## Core Constraints Checklist
+
+Apply these constraints in Vagabond recommendations:
+- Offline-first behavior and graceful degradation without connectivity
+- Spatial-native design (PostGIS for geo logic, not app-layer spatial math)
+- Open standards interoperability (GPX, GeoJSON, OSM, PMTiles, NMEA 0183)
+- Self-hosted deployment expectations (Docker Compose profiles)
+
+## Session Quality Bar
+
+- Prefer the next smallest deliverable that advances the MVP backlog.
+- Include a minimal test/verification approach with each proposed deliverable.
+- Keep planning docs consistent with established standards in `vagabond/vagabond-assistant/references/`.

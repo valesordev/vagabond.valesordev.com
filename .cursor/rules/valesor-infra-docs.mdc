@@ -1,0 +1,25 @@
+---
+description: Valesor infrastructure and submodule documentation standards
+globs: valesor/**
+alwaysApply: false
+---
+
+# Valesor Infra Docs Rule
+
+- Keep Terraform and deployment documentation aligned with actual infrastructure intent.
+- Treat `valesor/infrastructure/` as infrastructure source-of-truth docs; prioritize consistency of domain/repo mapping and deployment notes.
+- When referencing site repos, maintain explicit submodule awareness for `valesor/www.*` directories.
+
+## Required Consistency Checks
+
+- Domain, GitHub repo, and submodule directory names must stay synchronized across docs.
+- Infrastructure guidance must clearly separate:
+  - Cloudflare/Terraform configuration behavior
+  - per-site repository behavior
+- Any workflow update should include verification expectations (apply, deploy, or domain validation step).
+
+## Submodule Safety
+
+- Do not assume submodules are plain docs; they are live code repositories with their own lifecycle.
+- Avoid broad edits across multiple site submodules unless the task explicitly requires that scope.
+- Prefer documenting pointer updates and operational intent rather than making implicit cross-repo assumptions.

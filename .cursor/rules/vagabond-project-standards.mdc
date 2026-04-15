@@ -1,0 +1,66 @@
+---
+description: Vagabond engineering standards for local and remote Cursor work
+alwaysApply: true
+---
+
+# Vagabond Project Standards
+
+Use these standards for all implementation work in this repository, whether running in local Cursor (Linux/macOS) or remote Cursor agents.
+
+## Architecture And Product Constraints
+
+- Keep the app offline-first; every feature must degrade gracefully without connectivity.
+- Treat telemetry as first-class: Raspberry Pi Alloy agent and ingest path are core, not optional bolt-ons.
+- Keep the hybrid model clear: Vagabond owns PostgreSQL/PostGIS domain data; Grafana/Alloy remains an optional observability sidecar.
+- Route spatial logic through PostGIS, not application-layer geo math.
+
+## Workflow Rules
+
+- Start non-trivial work by checking project architecture and standards references in `vagabond-assistant/references/`.
+- Create an ADR before implementing decisions that change domain model, API shape, infrastructure, or major data flow.
+- Prefer small, composable crates/modules over monoliths.
+- Keep changes focused, testable, and easy to review.
+
+## Git And Collaboration
+
+- Branch naming: `feat/*`, `fix/*`, `chore/*`; `main` is stable, `dev` is integration.
+- Use Conventional Commits, e.g. `feat(gear): add weight tracking`.
+- PRs should reference an issue, and reference ADRs when architecture is affected.
+- Do not commit secrets; use `.env` (ignored) and keep `.env.example` updated.
+
+## Rust Standards
+
+- Workspace crates belong under `crates/`.
+- `vagabond-core`: domain types/traits only, no infra dependencies.
+- `vagabond-server`: HTTP/API surface that delegates to domain crates.
+- `vagabond-gear` and `vagabond-telemetry`: domain-focused crates depending on core.
+- Enforce `cargo fmt` and `cargo clippy -- -D warnings`.
+- Avoid `unwrap()` in library code; use typed errors (`thiserror`) and `?`.
+- Use Tokio as the async runtime.
+
+## Data And Database Standards
+
+- Use versioned `sqlx migrate` migrations; never edit committed migration files.
+- SQL naming: `snake_case`; UUID primary keys; standard `created_at`/`updated_at` timestamps.
+- Use WGS84 (`EPSG:4326`) for geometry columns and GIST indexes on geo fields.
+- Use PostGIS primitives (`ST_Distance`, bbox filters, `ST_MakeLine`) for spatial queries.
+
+## API Standards
+
+- Keep REST endpoints under `/api/v1/...`.
+- Use a consistent response envelope: `data`, `meta`, `error`.
+- Use stable, machine-readable error codes with HTTP-aligned status values.
+
+## Compose And Environment
+
+- Keep service names lowercase kebab-case.
+- Support compose profiles: default core plus `auth`, `storage`, `observability`, `full`.
+- Keep local and remote workflows parity-friendly: avoid OS-specific scripts when cross-platform alternatives exist.
+- Prefer portable shell and tooling choices that work on Linux/macOS and CI/agent environments.
+
+## Testing And Quality
+
+- Follow TDD for feature development: write/adjust failing tests first, implement, then refactor.
+- Include unit tests for domain logic and integration tests for API/data flows.
+- Update README and related docs when behavior, services, or config changes.
+

@@ -5,7 +5,7 @@ OBS_PROFILE := --profile observability
 -include .env
 export
 
-.PHONY: up down up-observability down-observability ps logs restart-prometheus restart-observability grafana-sa-token
+.PHONY: up down up-observability down-observability ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token
 
 up:
 	$(COMPOSE) up -d
@@ -30,6 +30,23 @@ restart-prometheus:
 
 restart-observability:
 	$(COMPOSE) $(OBS_PROFILE) up -d --force-recreate prometheus grafana postgres-exporter cadvisor node-exporter
+
+# ── Rebuild targets ───────────────────────────────────────────────────────────
+# Rebuild and restart the full app stack (server + web), leaving postgres and
+# martin untouched.
+rebuild:
+	$(COMPOSE) build --no-cache vagabond-server vagabond-web
+	$(COMPOSE) up -d --force-recreate vagabond-server vagabond-web
+
+# Rebuild and restart only the Rust API server.
+rebuild-server:
+	$(COMPOSE) build --no-cache vagabond-server
+	$(COMPOSE) up -d --force-recreate vagabond-server
+
+# Rebuild and restart only the Next.js frontend.
+rebuild-web:
+	$(COMPOSE) build --no-cache vagabond-web
+	$(COMPOSE) up -d --force-recreate vagabond-web
 
 # ── MCP / tooling auth ────────────────────────────────────────────────────────
 # Creates a Grafana service account + token and writes it to .env as

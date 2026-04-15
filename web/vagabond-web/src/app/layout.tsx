@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AppShell } from "@/components/AppShell";
+import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title:       "Vagabond",
@@ -13,7 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="dark">
+        <Providers>
+          <AppShell>{children}</AppShell>
+        </Providers>
+      </body>
     </html>
   );
 }

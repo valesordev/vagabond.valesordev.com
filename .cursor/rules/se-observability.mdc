@@ -1,0 +1,24 @@
+---
+description: SE observability query and reporting conventions
+globs: se/**
+alwaysApply: false
+---
+
+# SE Observability Rule
+
+- For observability analysis, require explicit time windows in prompts and summaries (for example: last 15m, 1h, 24h).
+- Name the datasource explicitly in investigation queries (for example: using loki, using prometheus).
+- Keep outputs evidence-first: facts, impact, likely cause, and next diagnostic step.
+
+## Query Construction Requirements
+
+- Prefer one investigative objective per query.
+- Include scope labels when relevant (service, environment, region).
+- Use reproducible CLI patterns for `grafana-assistant` in non-interactive mode (`--json` for structured output).
+
+## Reporting Format
+
+- State the time range and datasource first.
+- Quantify impact (counts, rates, latency percentiles, or affected entities).
+- Separate observed evidence from interpretation.
+- End with a concrete next action if uncertainty remains.
