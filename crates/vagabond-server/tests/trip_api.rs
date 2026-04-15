@@ -9,6 +9,17 @@ use sqlx::PgPool;
 use tower::ServiceExt;
 use uuid::Uuid;
 
+fn test_config() -> vagabond_server::config::Config {
+    vagabond_server::config::Config {
+        database_url: "postgres://vagabond:vagabond@localhost:5432/vagabond".into(),
+        db_max_connections: 10,
+        listen_addr: "0.0.0.0:3001".into(),
+        jwt_secret: "test-secret".into(),
+        keycloak_issuer: Some("http://localhost:8080/realms/vagabond".into()),
+        dev_auth: true,
+    }
+}
+
 async fn test_pool() -> PgPool {
     let url = std::env::var("TEST_DATABASE_URL")
         .expect("TEST_DATABASE_URL must be set when running ignored trip_api tests");
@@ -43,7 +54,7 @@ fn parse_json_body(bytes: &[u8]) -> Value {
 #[ignore = "requires TEST_DATABASE_URL (Postgres)"]
 async fn trip_crud_roundtrip() {
     let pool = test_pool().await;
-    let app = vagabond_server::build_app(pool.clone());
+    let app = vagabond_server::build_app(pool.clone(), &test_config()).await;
     let user_id = insert_test_user(&pool).await;
 
     let create_req = Request::builder()
@@ -124,7 +135,7 @@ async fn trip_crud_roundtrip() {
 #[ignore = "requires TEST_DATABASE_URL (Postgres)"]
 async fn missing_user_header_is_unauthorized() {
     let pool = test_pool().await;
-    let app = vagabond_server::build_app(pool);
+    let app = vagabond_server::build_app(pool, &test_config()).await;
     let req = Request::builder()
         .uri("/api/v1/trips")
         .body(Body::empty())
@@ -133,14 +144,14 @@ async fn missing_user_header_is_unauthorized() {
     assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     let v = parse_json_body(&res.into_body().collect().await.unwrap().to_bytes().as_ref());
     assert_eq!(v["data"], Value::Null);
-    assert_eq!(v["error"]["code"], "UNAUTHORIZED");
+    assert_eq!(v["error"]["code"], "MISSING_TOKEN");
 }
 
 #[tokio::test]
 #[ignore = "requires TEST_DATABASE_URL (Postgres)"]
 async fn other_users_trip_is_not_found() {
     let pool = test_pool().await;
-    let app = vagabond_server::build_app(pool.clone());
+    let app = vagabond_server::build_app(pool.clone(), &test_config()).await;
     let owner = insert_test_user(&pool).await;
     let stranger = insert_test_user(&pool).await;
 

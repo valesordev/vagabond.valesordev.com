@@ -1,12 +1,13 @@
 //! Vagabond HTTP API server library surface (router + shared modules).
 
-use axum::{routing::get, Router};
 use axum::http::{header::HeaderValue, Method};
+use axum::{routing::get, Router};
 use axum_prometheus::PrometheusMetricLayer;
 use sqlx::PgPool;
 use std::env;
 use tower_http::cors::{Any, CorsLayer};
 
+pub mod auth;
 pub mod config;
 pub mod error;
 pub mod extractors;
@@ -18,8 +19,10 @@ pub mod state;
 use state::AppState;
 
 /// Builds the full application router (health + `/api/v1`) with database state.
-pub fn build_app(db: PgPool) -> Router {
-    let state = AppState::new(db);
+pub async fn build_app(db: PgPool, cfg: &config::Config) -> Router {
+    let auth = auth::AuthState::new(cfg.keycloak_issuer.clone(), cfg.dev_auth);
+    auth::bootstrap_jwks(auth.clone()).await;
+    let state = AppState::new(db, auth);
     let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
     let cors_origins = env::var("CORS_ALLOW_ORIGINS")
         .ok()
@@ -52,10 +55,8 @@ pub fn build_app(db: PgPool) -> Router {
         ])
         .allow_headers(Any)
         .allow_origin(allowed_origins);
-    let metrics_router = Router::new().route(
-        "/metrics",
-        get(|| async move { metric_handle.render() }),
-    );
+    let metrics_router =
+        Router::new().route("/metrics", get(|| async move { metric_handle.render() }));
     Router::new()
         .route("/health", get(routes::health::handler))
         .nest("/api/v1", routes::v1::router())
@@ -74,12 +75,22 @@ mod tests {
     use sqlx::postgres::PgPoolOptions;
     use tower::ServiceExt;
 
+    const TEST_ISSUER: &str = "http://localhost:8080/realms/vagabond";
+
     #[tokio::test]
     async fn metrics_endpoint_returns_prometheus_payload() {
+        let cfg = config::Config {
+            database_url: "postgres://vagabond:vagabond@localhost:5432/vagabond".into(),
+            db_max_connections: 10,
+            listen_addr: "0.0.0.0:3001".into(),
+            jwt_secret: "test-secret".into(),
+            keycloak_issuer: Some(TEST_ISSUER.into()),
+            dev_auth: false,
+        };
         let pool = PgPoolOptions::new()
             .connect_lazy("postgres://vagabond:vagabond@localhost:5432/vagabond")
             .expect("build lazy pool");
-        let app = build_app(pool);
+        let app = build_app(pool, &cfg).await;
 
         let req = Request::builder()
             .uri("/metrics")

@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
 
     info!("migrations applied");
 
-    let app = vagabond_server::build_app(pool);
+    let app = vagabond_server::build_app(pool, &cfg).await;
 
     let addr: SocketAddr = cfg.listen_addr.parse().context("invalid listen address")?;
     info!("vagabond-server listening on {addr}");

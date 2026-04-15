@@ -1,7 +1,7 @@
 //! Trip CRUD (`/api/v1/trips`). Leg endpoints remain TODO.
 
-use axum::extract::{Path, Query, State};
 use axum::extract::rejection::{JsonRejection, QueryRejection};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
@@ -20,51 +20,51 @@ use crate::state::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateTripBody {
-    pub name:        String,
+    pub name: String,
     pub description: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateTripBody {
-    pub name:        String,
+    pub name: String,
     pub description: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default)]
 pub struct ListTripsQuery {
-    pub limit:  Option<i64>,
+    pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
 struct TripResponse {
-    id:          Uuid,
-    user_id:     Uuid,
-    name:        String,
+    id: Uuid,
+    user_id: Uuid,
+    name: String,
     description: Option<String>,
-    created_at:  chrono::DateTime<chrono::Utc>,
-    updated_at:  chrono::DateTime<chrono::Utc>,
+    created_at: chrono::DateTime<chrono::Utc>,
+    updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl From<Trip> for TripResponse {
     fn from(t: Trip) -> Self {
         Self {
-            id:          t.id,
-            user_id:     t.user_id,
-            name:        t.name,
+            id: t.id,
+            user_id: t.user_id,
+            name: t.name,
             description: t.description,
-            created_at:  t.created_at,
-            updated_at:  t.updated_at,
+            created_at: t.created_at,
+            updated_at: t.updated_at,
         }
     }
 }
 
 fn map_json_rejection(r: JsonRejection) -> ApiError {
-    ApiError(VagabondError::Validation(r.to_string()))
+    ApiError::from(VagabondError::Validation(r.to_string()))
 }
 
 fn map_query_rejection(r: QueryRejection) -> ApiError {
-    ApiError(VagabondError::Validation(r.to_string()))
+    ApiError::from(VagabondError::Validation(r.to_string()))
 }
 
 pub async fn list(
