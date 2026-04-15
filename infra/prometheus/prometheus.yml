@@ -3,15 +3,36 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  - job_name: grafana
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["grafana:3000"]
+
   - job_name: vagabond-server
+    metrics_path: /metrics
     static_configs:
       - targets: ["vagabond-server:3001"]
-    metrics_path: /metrics
+
+  - job_name: martin
+    metrics_path: /_/metrics
+    static_configs:
+      - targets: ["martin:3000"]
 
   - job_name: postgres
     static_configs:
-      - targets: ["postgres:9187"]   # postgres_exporter sidecar if added later
+      - targets: ["postgres-exporter:9187"]
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
 
   - job_name: node
     static_configs:
-      - targets: ["localhost:9100"]  # node_exporter if added later
+      - targets: ["node-exporter:9100"]
+    relabel_configs:
+      - target_label: instance
+        replacement: vagabond-client:9100

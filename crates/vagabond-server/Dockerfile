@@ -2,7 +2,7 @@
 # Multi-stage build — final image is ~20MB scratch-based binary
 
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM rust:1.77-slim-bookworm AS builder
+FROM rust:1.88-slim-bookworm AS builder
 
 WORKDIR /build
 
@@ -31,7 +31,7 @@ RUN cargo build --release --bin vagabond-server 2>/dev/null || true
 
 # Now copy real source and rebuild (only changed crates recompile)
 COPY crates/ crates/
-RUN touch crates/vagabond-server/src/main.rs \
+RUN find crates -type f -name "*.rs" -exec touch {} + \
  && SQLX_OFFLINE=true cargo build --release --bin vagabond-server
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
