@@ -6,13 +6,13 @@ use uuid::Uuid;
 /// OTLP payload → this struct → PostGIS insert.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TelemetryPoint {
-    pub session_id:  Uuid,
+    pub session_id: Uuid,
     pub recorded_at: DateTime<Utc>,
-    pub lat:         f64,
-    pub lon:         f64,
-    pub altitude_m:  Option<f64>,
-    pub speed_kph:   Option<f64>,
+    pub lat: f64,
+    pub lon: f64,
+    pub altitude_m: Option<f64>,
+    pub speed_kph: Option<f64>,
     pub heading_deg: Option<f64>,
     pub battery_pct: Option<f64>,
-    pub solar_w:     Option<f64>,
+    pub solar_w: Option<f64>,
 }

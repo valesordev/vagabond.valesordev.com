@@ -5,8 +5,9 @@
 //! All other crates depend on this one.
 
 pub mod error;
-pub mod trip;
-pub mod rig;
+pub mod field_log;
 pub mod geo;
+pub mod rig;
+pub mod trip;
 
 pub use error::VagabondError;

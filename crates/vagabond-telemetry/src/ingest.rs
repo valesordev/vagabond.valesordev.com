@@ -12,10 +12,7 @@ pub fn parse_otlp_payload(_raw: &[u8]) -> Result<Vec<TelemetryPoint>, VagabondEr
 }
 
 /// Bulk-insert parsed telemetry points into PostGIS.
-pub async fn insert_points(
-    pool: &PgPool,
-    points: &[TelemetryPoint],
-) -> Result<u64, VagabondError> {
+pub async fn insert_points(pool: &PgPool, points: &[TelemetryPoint]) -> Result<u64, VagabondError> {
     // TODO: implement bulk insert via UNNEST for efficiency
     let _ = pool;
     let _ = points;

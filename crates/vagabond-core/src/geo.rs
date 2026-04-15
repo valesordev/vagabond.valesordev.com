@@ -22,8 +22,12 @@ impl GeoPoint {
         }
     }
 
-    pub fn lon(&self) -> f64 { self.coordinates[0] }
-    pub fn lat(&self) -> f64 { self.coordinates[1] }
+    pub fn lon(&self) -> f64 {
+        self.coordinates[0]
+    }
+    pub fn lat(&self) -> f64 {
+        self.coordinates[1]
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

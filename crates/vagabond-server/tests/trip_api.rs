@@ -87,7 +87,7 @@ async fn trip_crud_roundtrip() {
         .unwrap();
     let res = app.clone().oneshot(list_req).await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
-    let v = parse_json_body(&res.into_body().collect().await.unwrap().to_bytes().as_ref());
+    let v = parse_json_body(res.into_body().collect().await.unwrap().to_bytes().as_ref());
     assert_eq!(v["meta"]["total"], 1);
     assert_eq!(v["data"].as_array().unwrap().len(), 1);
 
@@ -114,7 +114,7 @@ async fn trip_crud_roundtrip() {
         .unwrap();
     let res = app.clone().oneshot(put_req).await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
-    let v = parse_json_body(&res.into_body().collect().await.unwrap().to_bytes().as_ref());
+    let v = parse_json_body(res.into_body().collect().await.unwrap().to_bytes().as_ref());
     assert_eq!(v["data"]["name"], "Eastern Sierra v2");
     assert_eq!(v["data"]["description"], Value::Null);
 
@@ -126,7 +126,7 @@ async fn trip_crud_roundtrip() {
         .unwrap();
     let res = app.oneshot(del_req).await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
-    let v = parse_json_body(&res.into_body().collect().await.unwrap().to_bytes().as_ref());
+    let v = parse_json_body(res.into_body().collect().await.unwrap().to_bytes().as_ref());
     assert_eq!(v["data"], Value::Null);
     assert_eq!(v["meta"]["deleted"], true);
 }
@@ -142,7 +142,7 @@ async fn missing_user_header_is_unauthorized() {
         .unwrap();
     let res = app.oneshot(req).await.unwrap();
     assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
-    let v = parse_json_body(&res.into_body().collect().await.unwrap().to_bytes().as_ref());
+    let v = parse_json_body(res.into_body().collect().await.unwrap().to_bytes().as_ref());
     assert_eq!(v["data"], Value::Null);
     assert_eq!(v["error"]["code"], "MISSING_TOKEN");
 }
@@ -164,7 +164,7 @@ async fn other_users_trip_is_not_found() {
         .unwrap();
     let res = app.clone().oneshot(create_req).await.unwrap();
     assert_eq!(res.status(), StatusCode::CREATED);
-    let v = parse_json_body(&res.into_body().collect().await.unwrap().to_bytes().as_ref());
+    let v = parse_json_body(res.into_body().collect().await.unwrap().to_bytes().as_ref());
     let trip_id = Uuid::parse_str(v["data"]["id"].as_str().unwrap()).unwrap();
 
     let get_req = Request::builder()

@@ -17,7 +17,9 @@ pub const MAX_TRIP_DESCRIPTION_LEN: usize = 8_000;
 pub fn validate_trip_name(name: &str) -> Result<String, VagabondError> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
-        return Err(VagabondError::Validation("trip name must not be empty".into()));
+        return Err(VagabondError::Validation(
+            "trip name must not be empty".into(),
+        ));
     }
     if trimmed.chars().count() > MAX_TRIP_NAME_LEN {
         return Err(VagabondError::Validation(format!(
@@ -28,7 +30,9 @@ pub fn validate_trip_name(name: &str) -> Result<String, VagabondError> {
 }
 
 /// Validates optional description length (after trim); `None` stays `None`.
-pub fn normalize_trip_description(description: Option<String>) -> Result<Option<String>, VagabondError> {
+pub fn normalize_trip_description(
+    description: Option<String>,
+) -> Result<Option<String>, VagabondError> {
     match description {
         None => Ok(None),
         Some(s) => {
@@ -47,7 +51,10 @@ pub fn normalize_trip_description(description: Option<String>) -> Result<Option<
 }
 
 /// Resolves `(limit, offset)` for paginated trip lists.
-pub fn trip_list_pagination(limit: Option<i64>, offset: Option<i64>) -> Result<(i64, i64), VagabondError> {
+pub fn trip_list_pagination(
+    limit: Option<i64>,
+    offset: Option<i64>,
+) -> Result<(i64, i64), VagabondError> {
     let limit = limit.unwrap_or(DEFAULT_TRIP_PAGE_SIZE);
     let offset = offset.unwrap_or(0);
     if !(1..=MAX_TRIP_PAGE_SIZE).contains(&limit) {
@@ -56,7 +63,9 @@ pub fn trip_list_pagination(limit: Option<i64>, offset: Option<i64>) -> Result<(
         )));
     }
     if offset < 0 {
-        return Err(VagabondError::Validation("offset must be non-negative".into()));
+        return Err(VagabondError::Validation(
+            "offset must be non-negative".into(),
+        ));
     }
     Ok((limit, offset))
 }
@@ -97,7 +106,10 @@ mod tests {
 
     #[test]
     fn pagination_defaults() {
-        assert_eq!(trip_list_pagination(None, None).unwrap(), (DEFAULT_TRIP_PAGE_SIZE, 0));
+        assert_eq!(
+            trip_list_pagination(None, None).unwrap(),
+            (DEFAULT_TRIP_PAGE_SIZE, 0)
+        );
     }
 
     #[test]
@@ -141,9 +153,22 @@ pub struct Waypoint {
     pub seq: i32,
     pub name: String,
     pub notes: Option<String>,
-    // Geometry stored in PostGIS; lat/lon exposed on API responses via GeoJSON
-    pub lat: f64,
+    // Geometry stored in PostGIS; coordinates exposed as WGS-84 lon/lat.
     pub lon: f64,
+    pub lat: f64,
+}
+
+/// Flattened waypoint view for trip-level map rendering.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FlatWaypoint {
+    pub id: Uuid,
+    pub leg_id: Uuid,
+    pub trip_id: Uuid,
+    pub leg_seq: i32,
+    pub seq: i32,
+    pub name: String,
+    pub lon: f64,
+    pub lat: f64,
 }
 
 /// A campsite — may be dispersed BLM, established, or stealth urban.

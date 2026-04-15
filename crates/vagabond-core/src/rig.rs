@@ -11,7 +11,7 @@ pub struct Rig {
     pub make: String,
     pub model: String,
     pub year: i32,
-    pub fuel_capacity_gal: f64,
+    pub fuel_capacity_gal: Option<f64>,
     pub notes: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -27,6 +27,8 @@ pub struct GearItem {
     pub weight_oz: Option<f64>,
     pub storage_zone: StorageZone,
     pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
