@@ -1,29 +1,27 @@
 COMPOSE     := docker compose
 OBS_PROFILE := --profile observability
+FULL_PROFILES := --profile auth --profile storage --profile observability --profile full
 
 # Expose .env vars (GRAFANA_ADMIN_PASSWORD, GRAFANA_PORT, etc.) to make targets
 -include .env
 export
 
-.PHONY: up down up-observability down-observability ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token
+.PHONY: up down down-clean ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token
 
 up:
-	$(COMPOSE) up -d
+	$(COMPOSE) $(FULL_PROFILES) up -d
 
 down:
-	$(COMPOSE) down
+	$(COMPOSE) $(FULL_PROFILES) down --remove-orphans
 
-up-observability:
-	$(COMPOSE) $(OBS_PROFILE) up -d
-
-down-observability:
-	$(COMPOSE) $(OBS_PROFILE) down
+down-clean:
+	$(COMPOSE) $(FULL_PROFILES) down --volumes --remove-orphans
 
 ps:
-	$(COMPOSE) $(OBS_PROFILE) ps
+	$(COMPOSE) $(FULL_PROFILES) ps
 
 logs:
-	$(COMPOSE) $(OBS_PROFILE) logs -f --tail=200
+	$(COMPOSE) $(FULL_PROFILES) logs -f --tail=200
 
 restart-prometheus:
 	$(COMPOSE) $(OBS_PROFILE) restart prometheus
