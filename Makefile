@@ -1,7 +1,11 @@
-COMPOSE := docker compose
+COMPOSE     := docker compose
 OBS_PROFILE := --profile observability
 
-.PHONY: up down up-observability down-observability ps logs restart-prometheus restart-observability
+# Expose .env vars (GRAFANA_ADMIN_PASSWORD, GRAFANA_PORT, etc.) to make targets
+-include .env
+export
+
+.PHONY: up down up-observability down-observability ps logs restart-prometheus restart-observability grafana-sa-token
 
 up:
 	$(COMPOSE) up -d
@@ -26,3 +30,44 @@ restart-prometheus:
 
 restart-observability:
 	$(COMPOSE) $(OBS_PROFILE) up -d --force-recreate prometheus grafana postgres-exporter cadvisor node-exporter
+
+# ── MCP / tooling auth ────────────────────────────────────────────────────────
+# Creates a Grafana service account + token and writes it to .env as
+# GRAFANA_LOCAL_SA_TOKEN.  Requires the observability stack to be running.
+# Usage: make up-observability && make grafana-sa-token
+grafana-sa-token:
+	@GRAFANA_BASE="http://localhost:$${GRAFANA_PORT:-3003}"; \
+	GRAFANA_CREDS="$${GRAFANA_ADMIN_USER:-admin}:$${GRAFANA_ADMIN_PASSWORD:-changeme}"; \
+	echo "Waiting for Grafana at $$GRAFANA_BASE ..."; \
+	until curl -sf -u "$$GRAFANA_CREDS" "$$GRAFANA_BASE/api/health" > /dev/null; do sleep 2; done; \
+	echo "Resolving service account 'vagabond-mcp' ..."; \
+	SA_ID=$$(curl -sf -u "$$GRAFANA_CREDS" \
+	  "$$GRAFANA_BASE/api/serviceaccounts/search?query=vagabond-mcp" \
+	  | jq -r '.serviceAccounts[] | select(.name=="vagabond-mcp") | .id' 2>/dev/null); \
+	if [ -z "$$SA_ID" ] || [ "$$SA_ID" = "null" ]; then \
+	  echo "  → creating new service account ..."; \
+	  SA_ID=$$(curl -sf -u "$$GRAFANA_CREDS" \
+	    -X POST "$$GRAFANA_BASE/api/serviceaccounts" \
+	    -H 'Content-Type: application/json' \
+	    -d '{"name":"vagabond-mcp","role":"Admin"}' | jq -r '.id'); \
+	else \
+	  echo "  → found existing SA id=$$SA_ID"; \
+	fi; \
+	if [ -z "$$SA_ID" ] || [ "$$SA_ID" = "null" ]; then \
+	  echo "ERROR: could not create or find service account"; exit 1; \
+	fi; \
+	echo "Generating token ..."; \
+	TOKEN=$$(curl -sf -u "$$GRAFANA_CREDS" \
+	  -X POST "$$GRAFANA_BASE/api/serviceaccounts/$$SA_ID/tokens" \
+	  -H 'Content-Type: application/json' \
+	  -d "{\"name\":\"vagabond-mcp-token-$$(date +%s)\"}" | jq -r '.key'); \
+	if [ -z "$$TOKEN" ] || [ "$$TOKEN" = "null" ]; then \
+	  echo "ERROR: token generation failed"; exit 1; \
+	fi; \
+	if grep -q '^GRAFANA_LOCAL_SA_TOKEN=' .env 2>/dev/null; then \
+	  sed -i "s|^GRAFANA_LOCAL_SA_TOKEN=.*|GRAFANA_LOCAL_SA_TOKEN=$$TOKEN|" .env; \
+	else \
+	  echo "GRAFANA_LOCAL_SA_TOKEN=$$TOKEN" >> .env; \
+	fi; \
+	echo "Done — GRAFANA_LOCAL_SA_TOKEN written to .env"; \
+	echo "Restart Claude Code / Cursor to pick up the new MCP credentials."

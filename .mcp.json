@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "grafana-local": {
+      "command": "bash",
+      "args": ["scripts/mcp-grafana-local.sh"],
+      "description": "Local Grafana instance (Docker Compose observability profile). Run `make grafana-sa-token` to bootstrap credentials."
+    }
+  }
+}
