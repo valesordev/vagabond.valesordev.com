@@ -47,3 +47,10 @@ Keycloak is the **reference OIDC provider**, shipped as `--profile auth` in Dock
 - **Auth.js (NextAuth)**: frontend-only auth, doesn't protect the Rust API layer; rejected
 - **Dex**: minimal OIDC proxy, good for federating existing identity sources. Too minimal
   for multi-user community case (no built-in user management UI)
+
+## Addendum (2026-04-15)
+
+To support offline/local frontend iteration when Keycloak is not running, the server now
+supports `VAGABOND_DEV_AUTH=true`. In this mode only, `X-Vagabond-User-Id` is accepted as a
+development fallback for identity extraction. Production/default behavior remains OIDC JWT
+validation against issuer JWKS.
