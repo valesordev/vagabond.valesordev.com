@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import maplibregl, { type LngLatLike, type Marker } from "maplibre-gl";
 import { PMTiles, Protocol } from "pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { type Waypoint } from "@/lib/api";
 import { useMapStore } from "@/stores/mapStore";
+
+const WAYPOINTS_SOURCE_ID = "trip-waypoints-source";
+const WAYPOINTS_LAYER_ID = "trip-waypoints-circles";
 
 type MapMarker = {
   id: string;
@@ -14,10 +18,18 @@ type MapMarker = {
   label?: string;
 };
 
+export type MapHandle = {
+  flyTo: (lon: number, lat: number) => void;
+};
+
 type MapProps = {
   initialCenter?: [number, number];
   initialZoom?: number;
   markers?: MapMarker[];
+  waypoints?: Waypoint[];
+  /** When `true`, first fetch has completed; used with `waypoints` for one-time bounds fit. */
+  waypointsFetchComplete?: boolean;
+  onMapClick?: (lon: number, lat: number) => void;
   onMoveEnd?: (center: [number, number], zoom: number) => void;
 };
 
@@ -73,17 +85,58 @@ function buildPmtilesStyle(pmtilesUrl: string): maplibregl.StyleSpecification {
   };
 }
 
-export default function Map({
-  initialCenter = [0, 0],
-  initialZoom = 4,
-  markers = [],
-  onMoveEnd,
-}: MapProps) {
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function waypointsToFeatureCollection(waypoints: Waypoint[]): {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    geometry: { type: "Point"; coordinates: [number, number] };
+    properties: { id: string; name: string; notes: string };
+  }>;
+} {
+  return {
+    type: "FeatureCollection",
+    features: waypoints.map((w) => ({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [w.lon, w.lat],
+      },
+      properties: {
+        id: w.id,
+        name: w.name,
+        notes: w.notes ?? "",
+      },
+    })),
+  };
+}
+
+const Map = forwardRef<MapHandle, MapProps>(function Map(
+  {
+    initialCenter = [0, 0],
+    initialZoom = 4,
+    markers = [],
+    waypoints,
+    waypointsFetchComplete,
+    onMapClick,
+    onMoveEnd,
+  },
+  ref,
+) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRefs = useRef<Marker[]>([]);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const waypointHoverCleanupRef = useRef<(() => void) | null>(null);
+  const mapClickCleanupRef = useRef<(() => void) | null>(null);
+  const initialWaypointCountCapturedRef = useRef<number | null>(null);
+  const hasFittedInitialWaypointsRef = useRef(false);
   const [cursorCenter, setCursorCenter] = useState<[number, number]>(initialCenter);
   const [cursorZoom, setCursorZoom] = useState<number>(initialZoom);
+  const [mapReady, setMapReady] = useState(false);
 
   const setViewport = useMapStore((state) => state.setViewport);
   const center = useMapStore((state) => state.center);
@@ -94,6 +147,23 @@ export default function Map({
   const style = useMemo(
     () => (pmtilesUrl ? buildPmtilesStyle(pmtilesUrl) : buildFallbackStyle()),
     [pmtilesUrl],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      flyTo: (lon: number, lat: number) => {
+        const map = mapRef.current;
+        if (!map) {
+          return;
+        }
+        map.flyTo({
+          center: [lon, lat],
+          zoom: Math.max(map.getZoom(), 12),
+        });
+      },
+    }),
+    [],
   );
 
   useEffect(() => {
@@ -113,7 +183,6 @@ export default function Map({
         try {
           await pmtiles.getHeader();
         } catch (error) {
-          // Offline-first behavior: render map without base tiles on PMTiles failures.
           console.warn("Failed to load PMTiles archive. Rendering fallback map.", error);
           mapStyle = buildFallbackStyle();
         }
@@ -160,6 +229,12 @@ export default function Map({
         onMoveEnd?.(viewportCenter, nextZoom);
       });
 
+      map.on("load", () => {
+        if (!disposed) {
+          setMapReady(true);
+        }
+      });
+
       mapRef.current = map;
     };
 
@@ -168,13 +243,174 @@ export default function Map({
     return () => {
       disposed = true;
 
+      waypointHoverCleanupRef.current?.();
+      waypointHoverCleanupRef.current = null;
+      mapClickCleanupRef.current?.();
+      mapClickCleanupRef.current = null;
+
+      popupRef.current?.remove();
+      popupRef.current = null;
+
+      const map = mapRef.current;
+      if (map) {
+        if (map.getLayer(WAYPOINTS_LAYER_ID)) {
+          map.removeLayer(WAYPOINTS_LAYER_ID);
+        }
+        if (map.getSource(WAYPOINTS_SOURCE_ID)) {
+          map.removeSource(WAYPOINTS_SOURCE_ID);
+        }
+      }
+
       markerRefs.current.forEach((marker) => marker.remove());
       markerRefs.current = [];
 
       mapRef.current?.remove();
       mapRef.current = null;
+      setMapReady(false);
     };
   }, [bearing, center, initialCenter, initialZoom, onMoveEnd, pmtilesUrl, setViewport, style, zoom]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map || waypoints === undefined) {
+      return;
+    }
+
+    const attachHoverHandlers = () => {
+      waypointHoverCleanupRef.current?.();
+      const popup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        maxWidth: "240px",
+      });
+      popupRef.current = popup;
+
+      const onEnter = (e: maplibregl.MapLayerMouseEvent) => {
+        map.getCanvas().style.cursor = "pointer";
+        const feature = e.features?.[0];
+        const props = feature?.properties as { name?: string; notes?: string } | undefined;
+        if (!props) {
+          return;
+        }
+        const name = props.name ?? "";
+        const notes = props.notes ?? "";
+        const notesHtml =
+          notes.trim().length > 0
+            ? `<div class="mt-1 text-xs text-neutral-300">${escapeHtml(notes)}</div>`
+            : "";
+        popup
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<div class="text-sm"><strong>${escapeHtml(name)}</strong>${notesHtml}</div>`,
+          )
+          .addTo(map);
+      };
+
+      const onLeave = () => {
+        map.getCanvas().style.cursor = "";
+        popup.remove();
+      };
+
+      map.on("mouseenter", WAYPOINTS_LAYER_ID, onEnter);
+      map.on("mouseleave", WAYPOINTS_LAYER_ID, onLeave);
+
+      waypointHoverCleanupRef.current = () => {
+        map.off("mouseenter", WAYPOINTS_LAYER_ID, onEnter);
+        map.off("mouseleave", WAYPOINTS_LAYER_ID, onLeave);
+      };
+    };
+
+    if (!map.isStyleLoaded()) {
+      return;
+    }
+
+    const source = map.getSource(WAYPOINTS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    if (source) {
+      source.setData(waypointsToFeatureCollection(waypoints));
+      return;
+    }
+
+    map.addSource(WAYPOINTS_SOURCE_ID, {
+      type: "geojson",
+      data: waypointsToFeatureCollection(waypoints),
+    });
+
+    map.addLayer({
+      id: WAYPOINTS_LAYER_ID,
+      type: "circle",
+      source: WAYPOINTS_SOURCE_ID,
+      paint: {
+        "circle-radius": 8,
+        "circle-color": "#3b82f6",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+      },
+    });
+
+    attachHoverHandlers();
+  }, [mapReady, waypoints]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) {
+      return;
+    }
+
+    mapClickCleanupRef.current?.();
+    mapClickCleanupRef.current = null;
+
+    if (!onMapClick) {
+      return;
+    }
+
+    const handler = (e: maplibregl.MapMouseEvent) => {
+      onMapClick(e.lngLat.lng, e.lngLat.lat);
+    };
+
+    map.on("click", handler);
+    mapClickCleanupRef.current = () => {
+      map.off("click", handler);
+    };
+
+    return () => {
+      mapClickCleanupRef.current?.();
+      mapClickCleanupRef.current = null;
+    };
+  }, [mapReady, onMapClick]);
+
+  useEffect(() => {
+    if (waypointsFetchComplete !== true) {
+      return;
+    }
+    if (initialWaypointCountCapturedRef.current !== null) {
+      return;
+    }
+    initialWaypointCountCapturedRef.current = waypoints?.length ?? 0;
+  }, [waypoints, waypointsFetchComplete]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map?.isStyleLoaded()) {
+      return;
+    }
+    if (waypoints === undefined) {
+      return;
+    }
+    if (initialWaypointCountCapturedRef.current === null || initialWaypointCountCapturedRef.current === 0) {
+      return;
+    }
+    if (hasFittedInitialWaypointsRef.current) {
+      return;
+    }
+    if (waypoints.length === 0) {
+      return;
+    }
+
+    hasFittedInitialWaypointsRef.current = true;
+    const bounds = new maplibregl.LngLatBounds();
+    waypoints.forEach((w) => bounds.extend([w.lon, w.lat]));
+    map.fitBounds(bounds, { padding: 60 });
+  }, [mapReady, waypoints, waypointsFetchComplete]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -206,4 +442,6 @@ export default function Map({
       </div>
     </div>
   );
-}
+});
+
+export default Map;

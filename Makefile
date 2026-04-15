@@ -9,7 +9,7 @@ export
 .PHONY: up down down-clean ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token
 
 up:
-	$(COMPOSE) $(FULL_PROFILES) up -d
+	$(COMPOSE) $(FULL_PROFILES) up -d --force-recreate
 
 down:
 	$(COMPOSE) $(FULL_PROFILES) down --remove-orphans
