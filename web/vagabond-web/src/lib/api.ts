@@ -1,7 +1,18 @@
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001").replace(/\/$/, "");
 const API_V1_BASE_URL = `${API_BASE_URL}/api/v1`;
-// TODO: replace with Keycloak token in MVP-5.
-const DEV_USER_ID = "00000000-0000-0000-0000-000000000001";
+
+let currentToken: string | undefined;
+
+export function setAuthToken(token: string | undefined) {
+  currentToken = token;
+}
+
+function authHeaders(): Record<string, string> {
+  if (!currentToken) {
+    return {};
+  }
+  return { Authorization: `Bearer ${currentToken}` };
+}
 
 export type ApiErrorShape = {
   code: string;
@@ -197,10 +208,10 @@ async function request<TData, TMeta = Record<string, unknown> | null>(
   path: string,
   options: RequestOptions = {},
 ): Promise<ApiEnvelope<TData, TMeta>> {
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  if (DEV_USER_ID) {
-    headers["X-Vagabond-User-Id"] = DEV_USER_ID;
-  }
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...authHeaders(),
+  };
 
   const res = await fetch(buildUrl(path, options.query), {
     method: options.method ?? "GET",
@@ -352,10 +363,7 @@ export async function importGpx(tripId: string, file: File): Promise<ApiEnvelope
   const form = new FormData();
   form.append("file", file);
 
-  const headers: HeadersInit = {};
-  if (DEV_USER_ID) {
-    headers["X-Vagabond-User-Id"] = DEV_USER_ID;
-  }
+  const headers: HeadersInit = authHeaders();
 
   const res = await fetch(`${API_V1_BASE_URL}/trips/${tripId}/import/gpx`, {
     method: "POST",

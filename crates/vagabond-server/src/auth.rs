@@ -11,14 +11,16 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct AuthState {
     issuer: Option<String>,
+    jwks_url: Option<String>,
     dev_auth: bool,
     jwks: Arc<RwLock<HashMap<String, DecodingKey>>>,
 }
 
 impl AuthState {
-    pub fn new(issuer: Option<String>, dev_auth: bool) -> Self {
+    pub fn new(issuer: Option<String>, jwks_url: Option<String>, dev_auth: bool) -> Self {
         Self {
             issuer,
+            jwks_url,
             dev_auth,
             jwks: Arc::new(RwLock::new(HashMap::new())),
         }
@@ -105,10 +107,14 @@ pub async fn bootstrap_jwks(auth: AuthState) {
 }
 
 async fn refresh_jwks(auth: &AuthState) -> anyhow::Result<()> {
-    let issuer = auth
-        .issuer()
-        .ok_or_else(|| anyhow::anyhow!("issuer is not configured"))?;
-    let url = format!("{issuer}/protocol/openid-connect/certs");
+    let url = if let Some(jwks_url) = auth.jwks_url.as_deref() {
+        jwks_url.to_owned()
+    } else {
+        let issuer = auth
+            .issuer()
+            .ok_or_else(|| anyhow::anyhow!("issuer is not configured"))?;
+        format!("{issuer}/protocol/openid-connect/certs")
+    };
     let jwks = reqwest::Client::new()
         .get(url)
         .send()

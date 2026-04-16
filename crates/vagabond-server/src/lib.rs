@@ -2,10 +2,13 @@
 
 use axum::http::{header::HeaderValue, Method};
 use axum::{routing::get, Router};
-use axum_prometheus::PrometheusMetricLayer;
+use axum_prometheus::{Handle, PrometheusMetricLayer};
 use sqlx::PgPool;
 use std::env;
+use std::sync::OnceLock;
 use tower_http::cors::{Any, CorsLayer};
+
+static PROMETHEUS_HANDLE: OnceLock<Handle> = OnceLock::new();
 
 pub mod auth;
 pub mod config;
@@ -20,10 +23,22 @@ use state::AppState;
 
 /// Builds the full application router (health + `/api/v1`) with database state.
 pub async fn build_app(db: PgPool, cfg: &config::Config) -> Router {
-    let auth = auth::AuthState::new(cfg.keycloak_issuer.clone(), cfg.dev_auth);
+    let auth = auth::AuthState::new(cfg.keycloak_issuer.clone(), cfg.keycloak_jwks_url.clone(), cfg.dev_auth);
     auth::bootstrap_jwks(auth.clone()).await;
     let state = AppState::new(db, auth);
-    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+    // PrometheusMetricLayer::pair() registers the global recorder and panics if called twice.
+    // Use the OnceLock so the recorder is only registered once, even across multiple build_app
+    // calls in integration tests.
+    let (prometheus_layer, metric_handle) = if PROMETHEUS_HANDLE.get().is_none() {
+        let (layer, handle) = PrometheusMetricLayer::pair();
+        let handle = PROMETHEUS_HANDLE
+            .get_or_init(|| axum_prometheus::Handle(handle))
+            .clone();
+        (layer, handle)
+    } else {
+        let handle = PROMETHEUS_HANDLE.get().unwrap().clone();
+        (PrometheusMetricLayer::new(), handle)
+    };
     let cors_origins = env::var("CORS_ALLOW_ORIGINS")
         .ok()
         .map(|value| {
@@ -56,7 +71,7 @@ pub async fn build_app(db: PgPool, cfg: &config::Config) -> Router {
         .allow_headers(Any)
         .allow_origin(allowed_origins);
     let metrics_router =
-        Router::new().route("/metrics", get(|| async move { metric_handle.render() }));
+        Router::new().route("/metrics", get(|| async move { metric_handle.0.render() }));
     Router::new()
         .route("/health", get(routes::health::handler))
         .nest("/api/v1", routes::v1::router())
@@ -85,6 +100,7 @@ mod tests {
             listen_addr: "0.0.0.0:3001".into(),
             jwt_secret: "test-secret".into(),
             keycloak_issuer: Some(TEST_ISSUER.into()),
+            keycloak_jwks_url: None,
             dev_auth: false,
         };
         let pool = PgPoolOptions::new()

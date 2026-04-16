@@ -8,6 +8,11 @@ pub struct Config {
     pub listen_addr: String,
     pub jwt_secret: String,
     pub keycloak_issuer: Option<String>,
+    /// Optional override for the JWKS endpoint URL. Defaults to
+    /// `{keycloak_issuer}/protocol/openid-connect/certs` when unset.
+    /// Useful in Docker where the server must reach Keycloak via an
+    /// internal service name while the JWT `iss` claim uses the public URL.
+    pub keycloak_jwks_url: Option<String>,
     pub dev_auth: bool,
 }
 
@@ -22,6 +27,7 @@ impl Config {
             listen_addr: env::var("LISTEN_ADDR").unwrap_or_else(|_| "0.0.0.0:3001".into()),
             jwt_secret: env::var("JWT_SECRET").context("JWT_SECRET is required")?,
             keycloak_issuer: env::var("KEYCLOAK_ISSUER").ok(),
+            keycloak_jwks_url: env::var("KEYCLOAK_JWKS_URL").ok(),
             dev_auth: env::var("VAGABOND_DEV_AUTH")
                 .map(|value| value.eq_ignore_ascii_case("true"))
                 .unwrap_or(false),
