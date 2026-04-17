@@ -6,7 +6,7 @@ function keycloakBase(internal = false): string {
   // Docker-to-Docker traffic stays on the overlay network.
   // For browser-facing URLs always use NEXT_PUBLIC_KEYCLOAK_URL (host-accessible).
   const envVar = internal ? "KEYCLOAK_INTERNAL_URL" : "NEXT_PUBLIC_KEYCLOAK_URL";
-  return (process.env[envVar] ?? "http://localhost:8080").replace(/\/$/, "");
+  return (process.env[envVar] ?? "http://localhost/auth").replace(/\/$/, "");
 }
 
 function keycloakIssuer(): string {

@@ -15,14 +15,14 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "redirectUris": [
-        "http://localhost:3000/api/auth/callback/keycloak",
-        "http://127.0.0.1:3000/api/auth/callback/keycloak",
-        "http://localhost:3000/*",
-        "http://127.0.0.1:3000/*"
+        "http://localhost/api/auth/callback/keycloak",
+        "http://127.0.0.1/api/auth/callback/keycloak",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
       ],
       "webOrigins": [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
+        "http://localhost",
+        "http://127.0.0.1"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
@@ -34,5 +34,22 @@
       { "name": "vagabond-user",  "description": "Standard user" },
       { "name": "vagabond-admin", "description": "Admin user" }
     ]
-  }
+  },
+  "users": [
+    {
+      "username": "vagabond-dev",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Vagabond",
+      "lastName": "Dev User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "vagabond-dev",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["vagabond-user"]
+    }
+  ]
 }

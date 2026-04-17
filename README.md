@@ -33,10 +33,14 @@ cp .env.example .env
 docker compose up -d
 
 # 4. Open
-open http://localhost:3000
+open http://localhost
 ```
 
-API is at `http://localhost:3001` · Tile server at `http://localhost:3002`
+Gateway routes:
+- Web: `http://localhost/`
+- API: `http://localhost/api/v1/...`
+- Tiles: `http://localhost/tiles/...`
+- Keycloak (auth profile): `http://localhost/auth/...`
 
 ### With auth (Keycloak)
 

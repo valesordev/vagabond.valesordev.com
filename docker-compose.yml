@@ -2,7 +2,7 @@
 # vagabond/docker-compose.yml
 #
 # Profiles:
-#   (default)          — core: server, web, postgres, martin
+#   (default)          — core: gateway, server, web, postgres, martin
 #   --profile auth     — adds Keycloak
 #   --profile storage  — adds MinIO
 #   --profile observability — adds Grafana, Prometheus, Alloy
@@ -16,6 +16,20 @@
 name: vagabond
 
 services:
+
+  # ── Nginx Gateway (single origin for web/api/tiles/auth) ───────────────────
+  vagabond-gateway:
+    image: nginx:1.27-alpine
+    container_name: vagabond-gateway
+    restart: unless-stopped
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${GATEWAY_PORT:-80}:80"
+    depends_on:
+      - vagabond-web
+      - vagabond-server
+      - martin
 
   # ── PostgreSQL + PostGIS ──────────────────────────────────────────────────
   postgres:
@@ -60,8 +74,8 @@ services:
       DATABASE_URL:    postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vagabond}
       LISTEN_ADDR:     0.0.0.0:3001
       JWT_SECRET:      ${JWT_SECRET:?JWT_SECRET is required}
-      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-}
-      KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-http://keycloak:8080/realms/vagabond/protocol/openid-connect/certs}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost/auth/realms/vagabond}
+      KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-http://keycloak:8080/auth/realms/vagabond/protocol/openid-connect/certs}
       RUST_LOG:        ${RUST_LOG:-info}
     ports:
       - "${SERVER_PORT:-3001}:3001"
@@ -76,29 +90,29 @@ services:
 
   # ── Vagabond Web (Next.js) ────────────────────────────────────────────────
   # Keycloak client `vagabond-web`: standard flow, redirect URI
-  # http://localhost:3000/api/auth/callback/keycloak, web origins http://localhost:3000 (see infra/keycloak/README.md).
+  # http://localhost/api/auth/callback/keycloak, web origins http://localhost (see infra/keycloak/README.md).
   vagabond-web:
     build:
       context: web/vagabond-web
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-        NEXT_PUBLIC_MARTIN_URL: ${NEXT_PUBLIC_MARTIN_URL:-http://localhost:3002}
-        NEXT_PUBLIC_KEYCLOAK_URL: ${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost:8080}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost}
+        NEXT_PUBLIC_MARTIN_URL: ${NEXT_PUBLIC_MARTIN_URL:-http://localhost/tiles}
+        NEXT_PUBLIC_KEYCLOAK_URL: ${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost/auth}
         NEXT_PUBLIC_KEYCLOAK_REALM: ${NEXT_PUBLIC_KEYCLOAK_REALM:-vagabond}
         NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:-vagabond-web}
         NEXT_PUBLIC_VAGABOND_DEV_AUTH: ${NEXT_PUBLIC_VAGABOND_DEV_AUTH:-false}
     container_name: vagabond-web
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-      NEXT_PUBLIC_MARTIN_URL: ${NEXT_PUBLIC_MARTIN_URL:-http://localhost:3002}
-      NEXT_PUBLIC_KEYCLOAK_URL: ${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost:8080}
-      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost}
+      NEXT_PUBLIC_MARTIN_URL: ${NEXT_PUBLIC_MARTIN_URL:-http://localhost/tiles}
+      NEXT_PUBLIC_KEYCLOAK_URL: ${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost/auth}
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080/auth}
       NEXT_PUBLIC_KEYCLOAK_REALM: ${NEXT_PUBLIC_KEYCLOAK_REALM:-vagabond}
       NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:-vagabond-web}
       NEXT_PUBLIC_VAGABOND_DEV_AUTH: ${NEXT_PUBLIC_VAGABOND_DEV_AUTH:-false}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
     ports:
@@ -122,6 +136,8 @@ services:
       KC_DB_PASSWORD:          ${POSTGRES_PASSWORD}
       KC_HOSTNAME_STRICT:      false
       KC_HOSTNAME:             localhost
+      KC_PROXY_HEADERS:        xforwarded
+      KC_HTTP_RELATIVE_PATH:   /auth
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
     volumes:
       - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/realm.json:ro

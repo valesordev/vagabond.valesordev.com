@@ -1,4 +1,4 @@
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001").replace(/\/$/, "");
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost").replace(/\/$/, "");
 const API_V1_BASE_URL = `${API_BASE_URL}/api/v1`;
 
 let currentToken: string | undefined;
