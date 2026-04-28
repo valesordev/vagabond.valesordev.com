@@ -23,7 +23,11 @@ use state::AppState;
 
 /// Builds the full application router (health + `/api/v1`) with database state.
 pub async fn build_app(db: PgPool, cfg: &config::Config) -> Router {
-    let auth = auth::AuthState::new(cfg.keycloak_issuer.clone(), cfg.keycloak_jwks_url.clone(), cfg.dev_auth);
+    let auth = auth::AuthState::new(
+        cfg.keycloak_issuer.clone(),
+        cfg.keycloak_jwks_url.clone(),
+        cfg.dev_auth,
+    );
     auth::bootstrap_jwks(auth.clone()).await;
     let state = AppState::new(db, auth);
     // PrometheusMetricLayer::pair() registers the global recorder and panics if called twice.

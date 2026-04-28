@@ -16,6 +16,7 @@ fn test_config() -> vagabond_server::config::Config {
         listen_addr: "0.0.0.0:3001".into(),
         jwt_secret: "test-secret".into(),
         keycloak_issuer: Some("http://localhost:8080/realms/vagabond".into()),
+        keycloak_jwks_url: None,
         dev_auth: true,
     }
 }
@@ -174,4 +175,33 @@ async fn other_users_trip_is_not_found() {
         .unwrap();
     let res = app.oneshot(get_req).await.unwrap();
     assert_eq!(res.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL (Postgres)"]
+async fn create_trip_without_user_row_provisions_user() {
+    let pool = test_pool().await;
+    let app = vagabond_server::build_app(pool, &test_config()).await;
+    let user_id = Uuid::new_v4();
+
+    let create_req = Request::builder()
+        .method("POST")
+        .uri("/api/v1/trips")
+        .header("content-type", "application/json")
+        .header("X-Vagabond-User-Id", user_id.to_string())
+        .body(Body::from(
+            json!({
+                "name": "Provisioned user",
+                "description": null
+            })
+            .to_string(),
+        ))
+        .unwrap();
+
+    let res = app.oneshot(create_req).await.unwrap();
+    assert_eq!(res.status(), StatusCode::CREATED);
+    let body = res.into_body().collect().await.unwrap().to_bytes();
+    let v = parse_json_body(&body);
+    assert_eq!(v["error"], Value::Null);
+    assert_eq!(v["data"]["user_id"], user_id.to_string());
 }

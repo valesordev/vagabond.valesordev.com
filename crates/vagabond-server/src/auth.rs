@@ -8,6 +8,14 @@ use tokio::sync::RwLock;
 use tracing::warn;
 use uuid::Uuid;
 
+/// Resolved caller identity after JWT validation (or dev header).
+#[derive(Debug, Clone)]
+pub struct AuthIdentity {
+    pub user_id: Uuid,
+    pub keycloak_sub: String,
+    pub email: String,
+}
+
 #[derive(Clone)]
 pub struct AuthState {
     issuer: Option<String>,
@@ -38,7 +46,7 @@ impl AuthState {
         self.jwks.write().await.insert(kid.into(), key);
     }
 
-    pub async fn validate_bearer_token(&self, token: &str) -> Result<Uuid, AuthError> {
+    pub async fn validate_bearer_token(&self, token: &str) -> Result<AuthIdentity, AuthError> {
         let issuer = self.issuer.as_deref().ok_or(AuthError::JwksUnavailable)?;
         let header = decode_header(token).map_err(|_| AuthError::InvalidToken)?;
         let kid = header.kid.ok_or(AuthError::InvalidToken)?;
@@ -56,7 +64,18 @@ impl AuthState {
         let claims =
             decode::<JwtClaims>(token, key, &validation).map_err(|_| AuthError::InvalidToken)?;
         let _ = (&claims.claims.iss, claims.claims.exp);
-        Uuid::parse_str(&claims.claims.sub).map_err(|_| AuthError::InvalidToken)
+        let keycloak_sub = claims.claims.sub;
+        let user_id = Uuid::parse_str(&keycloak_sub).map_err(|_| AuthError::InvalidToken)?;
+        let email = claims
+            .claims
+            .email
+            .filter(|e| !e.trim().is_empty())
+            .unwrap_or_else(|| format!("{user_id}@users.vagabond.local"));
+        Ok(AuthIdentity {
+            user_id,
+            keycloak_sub,
+            email,
+        })
     }
 }
 
@@ -65,6 +84,8 @@ struct JwtClaims {
     sub: String,
     iss: String,
     exp: usize,
+    #[serde(default)]
+    email: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

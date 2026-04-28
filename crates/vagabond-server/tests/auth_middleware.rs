@@ -71,11 +71,23 @@ async fn protected_handler(UserId(user_id): UserId) -> String {
     user_id.to_string()
 }
 
-async fn protected_app(dev_auth: bool, with_key: bool) -> Router {
+async fn test_pool() -> sqlx::PgPool {
+    let url = std::env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must be set when running ignored auth_middleware tests");
     let pool = PgPoolOptions::new()
-        .connect_lazy("postgres://vagabond:vagabond@localhost:5432/vagabond")
-        .expect("build lazy pool");
-    let auth = AuthState::new(Some(TEST_ISSUER.to_string()), dev_auth);
+        .connect(&url)
+        .await
+        .expect("connect TEST_DATABASE_URL");
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("run migrations");
+    pool
+}
+
+async fn protected_app(dev_auth: bool, with_key: bool) -> Router {
+    let pool = test_pool().await;
+    let auth = AuthState::new(Some(TEST_ISSUER.to_string()), None, dev_auth);
     if with_key {
         auth.insert_test_key(
             TEST_KID,
@@ -90,6 +102,7 @@ async fn protected_app(dev_auth: bool, with_key: bool) -> Router {
 }
 
 #[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL (Postgres); UserId extractor runs ensure_user"]
 async fn valid_token_is_accepted() {
     let app = protected_app(false, true).await;
     let user_id = Uuid::new_v4();
@@ -105,6 +118,7 @@ async fn valid_token_is_accepted() {
 }
 
 #[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL (Postgres); UserId extractor runs ensure_user"]
 async fn expired_token_is_rejected() {
     let app = protected_app(false, true).await;
     let user_id = Uuid::new_v4();
@@ -120,6 +134,7 @@ async fn expired_token_is_rejected() {
 }
 
 #[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL (Postgres); UserId extractor runs ensure_user"]
 async fn wrong_issuer_is_rejected() {
     let app = protected_app(false, true).await;
     let user_id = Uuid::new_v4();
@@ -135,6 +150,7 @@ async fn wrong_issuer_is_rejected() {
 }
 
 #[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL (Postgres); UserId extractor runs ensure_user"]
 async fn missing_header_is_rejected() {
     let app = protected_app(false, true).await;
     let req = Request::builder()
@@ -146,6 +162,7 @@ async fn missing_header_is_rejected() {
 }
 
 #[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL (Postgres); UserId extractor runs ensure_user"]
 async fn dev_auth_mode_bypasses_jwt() {
     let app = protected_app(true, false).await;
     let user_id = Uuid::new_v4();

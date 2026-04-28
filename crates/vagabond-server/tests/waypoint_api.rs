@@ -16,6 +16,7 @@ fn test_config() -> vagabond_server::config::Config {
         listen_addr: "0.0.0.0:3001".into(),
         jwt_secret: "test-secret".into(),
         keycloak_issuer: Some("http://localhost:8080/realms/vagabond".into()),
+        keycloak_jwks_url: None,
         dev_auth: true,
     }
 }
