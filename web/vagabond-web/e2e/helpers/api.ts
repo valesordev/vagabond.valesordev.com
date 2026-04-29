@@ -2,8 +2,21 @@ import type { APIRequestContext, APIResponse } from "@playwright/test";
 
 import { TEST_USER_ID } from "./test-data";
 
-const apiPort = process.env.PLAYWRIGHT_SERVER_PORT ?? "3101";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? `http://127.0.0.1:${apiPort}`;
+type ApiEnv = Partial<
+  Record<"PLAYWRIGHT_API_BASE_URL" | "PLAYWRIGHT_SERVER_PORT" | "NEXT_PUBLIC_API_URL", string>
+>;
+
+export function resolveApiBaseUrlForEnv(env: ApiEnv): string {
+  const explicitPlaywrightBaseUrl = env.PLAYWRIGHT_API_BASE_URL?.trim();
+  if (explicitPlaywrightBaseUrl) {
+    return explicitPlaywrightBaseUrl.replace(/\/$/, "");
+  }
+
+  const playwrightPort = env.PLAYWRIGHT_SERVER_PORT?.trim() || "3101";
+  return `http://127.0.0.1:${playwrightPort}`;
+}
+
+const API_BASE_URL = resolveApiBaseUrlForEnv(process.env);
 const API_V1_BASE_URL = `${API_BASE_URL.replace(/\/$/, "")}/api/v1`;
 
 type ApiEnvelope<TData> = {

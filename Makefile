@@ -6,7 +6,7 @@ FULL_PROFILES := --profile auth --profile storage --profile observability --prof
 -include .env
 export
 
-.PHONY: up down down-clean ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token
+.PHONY: up down down-clean ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token e2e-list e2e e2e-headed e2e-ui
 
 up:
 	$(COMPOSE) $(FULL_PROFILES) up -d --force-recreate
@@ -86,3 +86,18 @@ grafana-sa-token:
 	fi; \
 	echo "Done — GRAFANA_LOCAL_SA_TOKEN written to .env"; \
 	echo "Restart Claude Code / Cursor to pick up the new MCP credentials."
+
+# ── Playwright e2e ────────────────────────────────────────────────────────────
+# Always run Playwright from web/vagabond-web so the test runner and imported
+# @playwright/test module resolve to the same package instance.
+e2e-list:
+	cd web/vagabond-web && npm run test:e2e -- --list
+
+e2e:
+	cd web/vagabond-web && npm run test:e2e
+
+e2e-headed:
+	cd web/vagabond-web && npm run test:e2e:headed
+
+e2e-ui:
+	cd web/vagabond-web && npm run test:e2e:ui

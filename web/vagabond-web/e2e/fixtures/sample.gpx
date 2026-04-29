@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<gpx version="1.1" creator="vagabond-e2e">
+  <metadata><name>Kelso Dunes Loop</name></metadata>
+  <wpt lat="35.26" lon="-116.07"><name>Baker</name></wpt>
+  <wpt lat="35.40" lon="-115.94"><name>Kelso Dunes TH</name></wpt>
+  <rte>
+    <name>Kelbaker Road</name>
+    <rtept lat="35.26" lon="-116.07"/>
+    <rtept lat="35.40" lon="-115.94"/>
+  </rte>
+</gpx>

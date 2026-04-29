@@ -28,6 +28,7 @@ docker-compose.override.yml
 # Commit example files only; never commit personal trip data
 *.gpx
 !docs/examples/*.gpx
+!web/vagabond-web/e2e/fixtures/*.gpx
 
 # ── OS / IDE ──────────────────────────────────────────────────────────────────
 .DS_Store
@@ -35,3 +36,7 @@ docker-compose.override.yml
 .vscode/
 *.swp
 *.swo
+
+# ── Playwright auth state ──────────────────────────────────────────────────────
+web/vagabond-web/.auth/
+test-results/

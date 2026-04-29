@@ -130,6 +130,61 @@ cargo clippy -- -D warnings # lint (CI enforced)
 cargo fmt --check           # format check (CI enforced)
 ```
 
+### Running Playwright e2e tests
+
+Playwright installs under `web/vagabond-web`. Prefer repo root **`make`** targets so
+`npx` resolves the same `@playwright/test` as your spec imports (running from repo
+root with bare `npx playwright` alone can mismatch versions).
+
+First-time setup (browser binaries):
+
+```bash
+cd web/vagabond-web
+npm install
+npx playwright install
+```
+
+Default suite (starts a local Rust API + Next.js for the tests):
+
+```bash
+# from repo root
+make e2e-list
+make e2e
+
+# or directly
+cd web/vagabond-web
+npm run test:e2e -- --list
+npm run test:e2e
+```
+
+**PostgreSQL:** e2e starts `vagabond-server` against Docker Postgres (`vagabond-postgres`).
+Bring up the DB before running tests, e.g. `docker compose up -d postgres` (credentials
+must match `.env`; inline comments beside values can break parsing, so prefer values
+without trailing comment text).
+
+**Auth / Keycloak e2e:** set `PLAYWRIGHT_RUN_AUTH_TESTS=true` so the `auth setup` +
+`auth` projects run against real OIDC. Start Keycloak (and Postgres) first:
+
+```bash
+docker compose --profile auth up -d postgres keycloak
+```
+
+Then:
+
+```bash
+PLAYWRIGHT_RUN_AUTH_TESTS=true make e2e
+```
+
+If `.env` sets `KEYCLOAK_INTERNAL_URL` to a Docker-only hostname (`keycloak`), local
+Playwright may need an override compatible with NextAuth OIDC discovery on the host
+(unless `playwright.config.ts` defaults already suite your machine):
+
+```bash
+PLAYWRIGHT_RUN_AUTH_TESTS=true \
+PLAYWRIGHT_KEYCLOAK_INTERNAL_URL=http://localhost:8080/auth \
+make e2e
+```
+
 ---
 
 ## Contributing
