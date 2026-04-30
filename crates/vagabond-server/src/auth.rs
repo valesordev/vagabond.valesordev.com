@@ -54,9 +54,16 @@ impl AuthState {
         if alg != Algorithm::RS256 {
             return Err(AuthError::InvalidToken);
         }
-        let keys = self.jwks.read().await;
+        let mut keys = self.jwks.read().await;
         if keys.is_empty() {
-            return Err(AuthError::JwksUnavailable);
+            drop(keys);
+            refresh_jwks(self)
+                .await
+                .map_err(|_| AuthError::JwksUnavailable)?;
+            keys = self.jwks.read().await;
+            if keys.is_empty() {
+                return Err(AuthError::JwksUnavailable);
+            }
         }
         let key = keys.get(&kid).ok_or(AuthError::InvalidToken)?;
         let mut validation = Validation::new(Algorithm::RS256);

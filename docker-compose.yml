@@ -1,17 +1,9 @@
 ---
 # vagabond/docker-compose.yml
 #
-# Profiles:
-#   (default)          — core: gateway, server, web, postgres, martin
-#   --profile auth     — adds Keycloak
-#   --profile storage  — adds MinIO
-#   --profile observability — adds Grafana, Prometheus, Alloy
-#   --profile full     — everything
-#
 # Usage:
-#   docker compose up                          # core only
-#   docker compose --profile full up           # everything
-#   docker compose --profile auth --profile storage up
+#   docker compose up -d
+#   docker compose down --remove-orphans
 
 name: vagabond
 
@@ -50,6 +42,37 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-dev-user-seed:
+    image: postgis/postgis:16-3.4
+    container_name: vagabond-postgres-dev-user-seed
+    restart: "no"
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-vagabond}
+      PGUSER: ${POSTGRES_USER:-vagabond}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      sh -ec "
+      until psql -v ON_ERROR_STOP=1 -tAc \"SELECT to_regclass('public.users') IS NOT NULL\" | grep -q t; do
+        echo 'waiting for users table...';
+        sleep 2;
+      done;
+      psql -v ON_ERROR_STOP=1 -c
+      \"INSERT INTO users (id, keycloak_sub, email, display_name)
+      VALUES ('${VAGABOND_DEV_USER_ID:-00000000-0000-0000-0000-000000000001}',
+              'dev:${VAGABOND_DEV_USER_ID:-00000000-0000-0000-0000-000000000001}',
+              '${VAGABOND_DEV_USER_EMAIL:-dev-user@vagabond.local}',
+              '${VAGABOND_DEV_USER_DISPLAY_NAME:-Dev User}')
+      ON CONFLICT (id) DO UPDATE SET
+        keycloak_sub = EXCLUDED.keycloak_sub,
+        email = EXCLUDED.email,
+        display_name = EXCLUDED.display_name,
+        updated_at = NOW();\""
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # ── Martin (MVT tile server) ──────────────────────────────────────────────
   martin:
     image: ghcr.io/maplibre/martin:latest
@@ -74,6 +97,7 @@ services:
       DATABASE_URL:    postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vagabond}
       LISTEN_ADDR:     0.0.0.0:3001
       JWT_SECRET:      ${JWT_SECRET:?JWT_SECRET is required}
+      VAGABOND_DEV_AUTH: ${VAGABOND_DEV_AUTH:-false}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost/auth/realms/vagabond}
       KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-http://keycloak:8080/auth/realms/vagabond/protocol/openid-connect/certs}
       RUST_LOG:        ${RUST_LOG:-info}
@@ -120,16 +144,15 @@ services:
     depends_on:
       - vagabond-server
 
-  # ── Keycloak (auth profile) ───────────────────────────────────────────────
+  # ── Keycloak ───────────────────────────────────────────────────────────────
   keycloak:
-    profiles: ["auth", "full"]
     image: quay.io/keycloak/keycloak:24.0
     container_name: vagabond-keycloak
     restart: unless-stopped
     command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN:          ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD required for auth profile}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD is required}
       KC_DB:                   postgres
       KC_DB_URL:               jdbc:postgresql://postgres:5432/${POSTGRES_DB:-vagabond}
       KC_DB_USERNAME:          ${POSTGRES_USER:-vagabond}
@@ -147,25 +170,23 @@ services:
       postgres:
         condition: service_healthy
 
-  # ── MinIO (storage profile) ───────────────────────────────────────────────
+  # ── MinIO ─────────────────────────────────────────────────────────────────
   minio:
-    profiles: ["storage", "full"]
     image: minio/minio:latest
     container_name: vagabond-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER:     ${MINIO_ROOT_USER:-vagabond}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD required for storage profile}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
     volumes:
       - minio_data:/data
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
 
-  # ── Prometheus (observability profile) ───────────────────────────────────
+  # ── Prometheus ────────────────────────────────────────────────────────────
   prometheus:
-    profiles: ["observability", "full"]
     image: prom/prometheus:latest
     container_name: vagabond-prometheus
     restart: unless-stopped
@@ -178,7 +199,6 @@ services:
       - "${PROMETHEUS_PORT:-9090}:9090"
 
   postgres-exporter:
-    profiles: ["observability", "full"]
     image: quay.io/prometheuscommunity/postgres-exporter:latest
     container_name: vagabond-postgres-exporter
     restart: unless-stopped
@@ -189,7 +209,6 @@ services:
         condition: service_healthy
 
   cadvisor:
-    profiles: ["observability", "full"]
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: vagabond-cadvisor
     restart: unless-stopped
@@ -202,7 +221,6 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
 
   node-exporter:
-    profiles: ["observability", "full"]
     image: prom/node-exporter:latest
     container_name: vagabond-node-exporter
     restart: unless-stopped
@@ -211,9 +229,8 @@ services:
     volumes:
       - /:/host:ro,rslave
 
-  # ── Grafana (observability profile) ──────────────────────────────────────
+  # ── Grafana ───────────────────────────────────────────────────────────────
   grafana:
-    profiles: ["observability", "full"]
     image: grafana/grafana-oss:latest
     container_name: vagabond-grafana
     restart: unless-stopped

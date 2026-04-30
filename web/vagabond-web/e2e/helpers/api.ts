@@ -16,7 +16,11 @@ export function resolveApiBaseUrlForEnv(env: ApiEnv): string {
   return `http://127.0.0.1:${playwrightPort}`;
 }
 
-const API_BASE_URL = resolveApiBaseUrlForEnv(process.env);
+const API_BASE_URL = resolveApiBaseUrlForEnv({
+  PLAYWRIGHT_API_BASE_URL: process.env.PLAYWRIGHT_API_BASE_URL,
+  PLAYWRIGHT_SERVER_PORT: process.env.PLAYWRIGHT_SERVER_PORT,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+});
 const API_V1_BASE_URL = `${API_BASE_URL.replace(/\/$/, "")}/api/v1`;
 
 type ApiEnvelope<TData> = {

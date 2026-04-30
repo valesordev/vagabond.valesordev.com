@@ -42,16 +42,20 @@ Gateway routes:
 - Tiles: `http://localhost/tiles/...`
 - Keycloak (auth profile): `http://localhost/auth/...`
 
+On launch, Compose now runs a one-shot `postgres-dev-user-seed` service that upserts a
+default dev user row in `users` (configurable via `VAGABOND_DEV_USER_*` env vars), so FK
+references to `user_id` work immediately after a fresh boot.
+
 ### With auth (Keycloak)
 
 ```bash
-docker compose --profile auth up -d
+docker compose up -d
 ```
 
 ### Full stack (everything)
 
 ```bash
-docker compose --profile full up -d
+docker compose up -d
 ```
 
 ---
@@ -163,10 +167,10 @@ must match `.env`; inline comments beside values can break parsing, so prefer va
 without trailing comment text).
 
 **Auth / Keycloak e2e:** set `PLAYWRIGHT_RUN_AUTH_TESTS=true` so the `auth setup` +
-`auth` projects run against real OIDC. Start Keycloak (and Postgres) first:
+`auth` projects run against real OIDC. Start the stack first:
 
 ```bash
-docker compose --profile auth up -d postgres keycloak
+docker compose up -d postgres keycloak
 ```
 
 Then:

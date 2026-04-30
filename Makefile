@@ -1,6 +1,4 @@
 COMPOSE     := docker compose
-OBS_PROFILE := --profile observability
-FULL_PROFILES := --profile auth --profile storage --profile observability --profile full
 
 # Expose .env vars (GRAFANA_ADMIN_PASSWORD, GRAFANA_PORT, etc.) to make targets
 -include .env
@@ -9,25 +7,25 @@ export
 .PHONY: up down down-clean ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token e2e-list e2e e2e-headed e2e-ui
 
 up:
-	$(COMPOSE) $(FULL_PROFILES) up -d --force-recreate
+	$(COMPOSE) up -d --force-recreate
 
 down:
-	$(COMPOSE) $(FULL_PROFILES) down --remove-orphans
+	$(COMPOSE) down --remove-orphans
 
 down-clean:
-	$(COMPOSE) $(FULL_PROFILES) down --volumes --remove-orphans
+	$(COMPOSE) down --volumes --remove-orphans
 
 ps:
-	$(COMPOSE) $(FULL_PROFILES) ps
+	$(COMPOSE) ps
 
 logs:
-	$(COMPOSE) $(FULL_PROFILES) logs -f --tail=200
+	$(COMPOSE) logs -f --tail=200
 
 restart-prometheus:
-	$(COMPOSE) $(OBS_PROFILE) restart prometheus
+	$(COMPOSE) restart prometheus
 
 restart-observability:
-	$(COMPOSE) $(OBS_PROFILE) up -d --force-recreate prometheus grafana postgres-exporter cadvisor node-exporter
+	$(COMPOSE) up -d --force-recreate prometheus grafana postgres-exporter cadvisor node-exporter
 
 # ── Rebuild targets ───────────────────────────────────────────────────────────
 # Rebuild and restart the full app stack (server + web), leaving postgres and
@@ -49,7 +47,7 @@ rebuild-web:
 # ── MCP / tooling auth ────────────────────────────────────────────────────────
 # Creates a Grafana service account + token and writes it to .env as
 # GRAFANA_LOCAL_SA_TOKEN.  Requires the observability stack to be running.
-# Usage: make up-observability && make grafana-sa-token
+# Usage: make up && make grafana-sa-token
 grafana-sa-token:
 	@GRAFANA_BASE="http://localhost:$${GRAFANA_PORT:-3003}"; \
 	GRAFANA_CREDS="$${GRAFANA_ADMIN_USER:-admin}:$${GRAFANA_ADMIN_PASSWORD:-changeme}"; \

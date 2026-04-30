@@ -1,6 +1,6 @@
 # Keycloak realm import
 
-The `realm-export.json` file is mounted into the Keycloak container (`--import-realm`) when using the `auth` or `full` Compose profile.
+The `realm-export.json` file is mounted into the Keycloak container (`--import-realm`) when running the Compose stack.
 
 ## `vagabond-web` client (Next.js + NextAuth)
 
