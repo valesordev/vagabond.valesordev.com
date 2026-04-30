@@ -192,6 +192,46 @@ type RequestOptions = {
   query?: Record<string, string | number | undefined>;
 };
 
+async function reloadSessionAccessToken(): Promise<{
+  accessToken: string | undefined;
+  error: string | undefined;
+}> {
+  if (typeof window === "undefined") {
+    return { accessToken: undefined, error: undefined };
+  }
+  const { getSession } = await import("next-auth/react");
+  const session = await getSession();
+  const accessToken = typeof session?.accessToken === "string" ? session.accessToken : undefined;
+  const error = typeof session?.error === "string" ? session.error : undefined;
+  if (accessToken) {
+    setAuthToken(accessToken);
+  }
+  return { accessToken, error };
+}
+
+async function signOutStaleSession(): Promise<void> {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const { signOut } = await import("next-auth/react");
+  await signOut({ callbackUrl: "/" });
+}
+
+function shouldRetryUnauthorizedAfterReload(
+  retriedAuthReload: boolean,
+  bearerWasSent: boolean,
+  apiCode: string,
+  httpStatus: number,
+): boolean {
+  if (retriedAuthReload || !bearerWasSent) {
+    return false;
+  }
+  if (httpStatus !== 401) {
+    return false;
+  }
+  return apiCode === "INVALID_TOKEN" || apiCode === "MISSING_TOKEN";
+}
+
 function buildUrl(path: string, query?: RequestOptions["query"]): string {
   const url = new URL(`${API_V1_BASE_URL}${path}`);
   if (query) {
@@ -207,7 +247,9 @@ function buildUrl(path: string, query?: RequestOptions["query"]): string {
 async function request<TData, TMeta = Record<string, unknown> | null>(
   path: string,
   options: RequestOptions = {},
+  retriedAuthReload = false,
 ): Promise<ApiEnvelope<TData, TMeta>> {
+  const bearerWasSent = !!currentToken;
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...authHeaders(),
@@ -230,10 +272,27 @@ async function request<TData, TMeta = Record<string, unknown> | null>(
   if (!res.ok || envelope?.error) {
     const fallbackMessage = `API request failed (${res.status})`;
     const apiError = envelope?.error;
+    const code = apiError?.code ?? "API_ERROR";
+    const status = apiError?.status ?? res.status;
+
+    if (shouldRetryUnauthorizedAfterReload(retriedAuthReload, bearerWasSent, code, status)) {
+      const refreshed = await reloadSessionAccessToken();
+      if (refreshed.error === "RefreshAccessTokenError" || !refreshed.accessToken) {
+        await signOutStaleSession();
+        throw new ApiClientError(
+          "Session expired — sign in again.",
+          code,
+          status,
+          (envelope?.meta as Record<string, unknown> | null) ?? null,
+        );
+      }
+      return request<TData, TMeta>(path, options, true);
+    }
+
     throw new ApiClientError(
       apiError?.message ?? fallbackMessage,
-      apiError?.code ?? "API_ERROR",
-      apiError?.status ?? res.status,
+      code,
+      status,
       (envelope?.meta as Record<string, unknown> | null) ?? null,
     );
   }
@@ -359,10 +418,15 @@ export function deleteWaypoint(
   });
 }
 
-export async function importGpx(tripId: string, file: File): Promise<ApiEnvelope<GpxImportResult>> {
+export async function importGpx(
+  tripId: string,
+  file: File,
+  retriedAuthReload = false,
+): Promise<ApiEnvelope<GpxImportResult>> {
   const form = new FormData();
   form.append("file", file);
 
+  const bearerWasSent = !!currentToken;
   const headers: HeadersInit = authHeaders();
 
   const res = await fetch(`${API_V1_BASE_URL}/trips/${tripId}/import/gpx`, {
@@ -382,10 +446,27 @@ export async function importGpx(tripId: string, file: File): Promise<ApiEnvelope
   if (!res.ok || envelope?.error) {
     const fallbackMessage = `API request failed (${res.status})`;
     const apiError = envelope?.error;
+    const code = apiError?.code ?? "API_ERROR";
+    const status = apiError?.status ?? res.status;
+
+    if (shouldRetryUnauthorizedAfterReload(retriedAuthReload, bearerWasSent, code, status)) {
+      const refreshed = await reloadSessionAccessToken();
+      if (refreshed.error === "RefreshAccessTokenError" || !refreshed.accessToken) {
+        await signOutStaleSession();
+        throw new ApiClientError(
+          "Session expired — sign in again.",
+          code,
+          status,
+          (envelope?.meta as Record<string, unknown> | null) ?? null,
+        );
+      }
+      return importGpx(tripId, file, true);
+    }
+
     throw new ApiClientError(
       apiError?.message ?? fallbackMessage,
-      apiError?.code ?? "API_ERROR",
-      apiError?.status ?? res.status,
+      code,
+      status,
       (envelope?.meta as Record<string, unknown> | null) ?? null,
     );
   }

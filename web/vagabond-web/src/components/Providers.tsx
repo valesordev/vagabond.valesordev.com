@@ -29,7 +29,11 @@ export function Providers({ children }: ProvidersProps) {
   );
 
   return (
-    <SessionProvider>
+    <SessionProvider
+      // Seconds: hit /api/auth/session so the JWT callback can refresh tokens before stale Bearer calls.
+      refetchInterval={120}
+      refetchOnWindowFocus
+    >
       <QueryClientProvider client={queryClient}>
         <AuthSync />
         {children}
