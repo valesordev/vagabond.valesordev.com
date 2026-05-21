@@ -22,4 +22,4 @@ Apply these constraints in Vagabond recommendations:
 
 - Prefer the next smallest deliverable that advances the MVP backlog.
 - Include a minimal test/verification approach with each proposed deliverable.
-- Keep planning docs consistent with established standards in `vagabond/vagabond-assistant/references/`.
+- Keep planning docs consistent with `CLAUDE.md` and `vagabond/trips/` in the life.solo7.media parent repo.

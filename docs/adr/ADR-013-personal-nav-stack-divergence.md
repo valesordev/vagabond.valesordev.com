@@ -29,9 +29,9 @@ The Vagabond project's recommended FOSS field nav remains OsmAnd. This is docume
 - `vagabond/story-map-interview.md` (historical record — unchanged)
 
 Brian's personal-config documents reflect the divergence:
-- `CLAUDE.md` (root) — lists Apple Maps + Gaia GPS as the rig's nav stack
-- `vagabond/vagabond-assistant/references/rig-profile.md` — same
-- `vagabond/vagabond-assistant/SKILL.md` — same
+- `CLAUDE.md` (life.solo7.media root) — Rig Quick Reference
+- `vagabond/trips/equipment_inventory.md` — master rig inventory
+- Claude project skill / `/vagabond-assistant` command — operational trip context
 
 ## Consequences
 

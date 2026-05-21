@@ -16,7 +16,7 @@ Use these standards for all implementation work in this repository, whether runn
 
 ## Workflow Rules
 
-- Start non-trivial work by checking project architecture and standards references in `vagabond-assistant/references/`.
+- Start non-trivial work by checking `docs/adr/` and the Vagabond section in the parent repo `CLAUDE.md`.
 - Create an ADR before implementing decisions that change domain model, API shape, infrastructure, or major data flow.
 - Prefer small, composable crates/modules over monoliths.
 - Keep changes focused, testable, and easy to review.
