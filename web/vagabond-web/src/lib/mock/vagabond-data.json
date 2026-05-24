@@ -1,0 +1,1032 @@
+{
+  "trip": {
+    "id": "ga-pickup-26",
+    "name": "GA Pickup",
+    "window": "May 18 — May 20, 2026",
+    "origin": "Mojave preserve, CA",
+    "destination": "Atlanta, GA",
+    "totalMiles": 1819,
+    "driveHours": 27.8,
+    "homeTz": "PDT",
+    "campNights": 2,
+    "workStops": 2,
+    "meetings": 3,
+    "status": "Confirmed",
+    "crossesTz": "+3h (PDT → EDT)"
+  },
+  "stops": [
+    {
+      "id": "origin",
+      "kind": "origin",
+      "name": "Home base",
+      "loc": "Mojave preserve, CA",
+      "coords": [
+        -116.05,
+        35.05
+      ],
+      "day": 0
+    },
+    {
+      "id": "ws-lordsburg",
+      "kind": "workstop",
+      "name": "Lordsburg work stop",
+      "loc": "Lordsburg, NM — Pilot truck lot, west side",
+      "coords": [
+        -108.71,
+        32.35
+      ],
+      "day": 1,
+      "arrival": "09:18 MDT",
+      "arrivalLocal": "08:18 PDT",
+      "departure": "12:45 MDT",
+      "preBuffer": 30,
+      "postBuffer": 15,
+      "preBufferMargin": 22,
+      "postBufferMargin": 34,
+      "feasible": "ok",
+      "connectivity": "starlink",
+      "fallback": {
+        "name": "Deming, NM",
+        "note": "60mi east on I-10",
+        "coords": [
+          -107.76,
+          32.27
+        ]
+      },
+      "meetings": [
+        {
+          "id": "mb1",
+          "title": "Quarterly review",
+          "duration": 60,
+          "homeTime": "09:00 PDT",
+          "localTime": "10:00 MDT",
+          "connectivity": "starlink"
+        },
+        {
+          "id": "mb2",
+          "title": "Engineering 1:1",
+          "duration": 45,
+          "homeTime": "10:30 PDT",
+          "localTime": "11:30 MDT",
+          "connectivity": "cellular"
+        }
+      ]
+    },
+    {
+      "id": "camp-vanhorn",
+      "kind": "camp",
+      "name": "Van Horn overnight",
+      "loc": "Mountain Time RV park",
+      "coords": [
+        -104.84,
+        31.04
+      ],
+      "day": 1,
+      "arrival": "19:42 MDT",
+      "departure": "06:30 MDT"
+    },
+    {
+      "id": "ws-weatherford",
+      "kind": "workstop",
+      "name": "Weatherford work stop",
+      "loc": "Weatherford, TX — Holiday Inn lot, north end",
+      "coords": [
+        -97.8,
+        32.76
+      ],
+      "day": 2,
+      "arrival": "13:12 CDT",
+      "arrivalLocal": "11:12 PDT",
+      "departure": "16:20 CDT",
+      "preBuffer": 30,
+      "postBuffer": 15,
+      "preBufferMargin": 8,
+      "postBufferMargin": 18,
+      "feasible": "warn",
+      "feasibleReason": "Pre-buffer slack down to 8min on current ETA. Driving variance likely.",
+      "connectivity": "starlink",
+      "fallback": {
+        "name": "Mineral Wells, TX",
+        "note": "15mi west on US-180",
+        "coords": [
+          -98.11,
+          32.81
+        ]
+      },
+      "meetings": [
+        {
+          "id": "mb3",
+          "title": "Customer demo",
+          "duration": 75,
+          "homeTime": "12:00 PDT",
+          "localTime": "14:00 CDT",
+          "connectivity": "starlink"
+        }
+      ]
+    },
+    {
+      "id": "camp-shreveport",
+      "kind": "camp",
+      "name": "Shreveport overnight",
+      "loc": "KOA Holiday",
+      "coords": [
+        -93.75,
+        32.5
+      ],
+      "day": 2,
+      "arrival": "20:55 CDT",
+      "departure": "07:00 CDT"
+    },
+    {
+      "id": "destination",
+      "kind": "destination",
+      "name": "Atlanta, GA",
+      "loc": "Pickup destination",
+      "coords": [
+        -84.39,
+        33.75
+      ],
+      "day": 3
+    }
+  ],
+  "days": [
+    {
+      "num": 1,
+      "date": "May 18",
+      "title": "Mojave → Van Horn TX",
+      "miles": 612,
+      "hours": 9.4
+    },
+    {
+      "num": 2,
+      "date": "May 19",
+      "title": "Van Horn → Shreveport LA",
+      "miles": 658,
+      "hours": 10.1
+    },
+    {
+      "num": 3,
+      "date": "May 20",
+      "title": "Shreveport → Atlanta GA",
+      "miles": 549,
+      "hours": 8.3
+    }
+  ],
+  "powerLoads": [
+    {
+      "name": "MacBook Pro 16\"",
+      "watts": 65,
+      "hours": 8,
+      "daily": 520
+    },
+    {
+      "name": "Starlink Mini",
+      "watts": 35,
+      "hours": 14,
+      "daily": 490
+    },
+    {
+      "name": "External monitor",
+      "watts": 22,
+      "hours": 6,
+      "daily": 132
+    },
+    {
+      "name": "Fridge (avg duty)",
+      "watts": 45,
+      "hours": 24,
+      "daily": 320
+    },
+    {
+      "name": "LED interior",
+      "watts": 12,
+      "hours": 5,
+      "daily": 60
+    },
+    {
+      "name": "Phone + headset charge",
+      "watts": 18,
+      "hours": 3,
+      "daily": 54
+    }
+  ],
+  "solar": {
+    "panels": 2,
+    "peakWatts": 200,
+    "peakSunHours": 6.2,
+    "dailyProduction": 1488
+  },
+  "battery": {
+    "capacityWh": 3072,
+    "reserveWh": 1844
+  },
+  "waterBudget": {
+    "carryGallons": 18,
+    "consumptionPerDay": 2.4,
+    "tripDays": 3,
+    "resupply": [
+      {
+        "day": 2,
+        "location": "Van Horn RV park"
+      }
+    ],
+    "endReserve": 10.8
+  },
+  "foodPlan": [
+    {
+      "day": 1,
+      "meals": [
+        "Oat porridge + coffee",
+        "Tortilla wraps",
+        "Foil-pack chili"
+      ],
+      "cal": 2380
+    },
+    {
+      "day": 2,
+      "meals": [
+        "Eggs + avocado",
+        "Diner stop — Pecos",
+        "Pasta + tuna"
+      ],
+      "cal": 2510
+    },
+    {
+      "day": 3,
+      "meals": [
+        "Granola + yogurt",
+        "Sandwich (gas station)",
+        "Arrival dinner"
+      ],
+      "cal": 2410
+    }
+  ],
+  "catalog": [
+    {
+      "id": "kelso-bm",
+      "name": "Kelso BLM dispersed",
+      "type": "campsite",
+      "jurisdiction": "BLM",
+      "landUnit": "Mojave preserve",
+      "coords": [
+        -115.65,
+        35.02
+      ],
+      "visits": 6,
+      "lastVisit": "Apr 28, 2026",
+      "conditions": "good",
+      "elev": 2412,
+      "sky": "open",
+      "cellSignal": 2,
+      "starlinkOk": true,
+      "water": false,
+      "fee": "free",
+      "notes": 3,
+      "conditions_date": "Apr 28, 2026"
+    },
+    {
+      "id": "lordsburg-pilot",
+      "name": "Lordsburg Pilot truck lot",
+      "type": "workspot",
+      "jurisdiction": "Private",
+      "landUnit": "Lordsburg, NM",
+      "coords": [
+        -108.71,
+        32.35
+      ],
+      "visits": 4,
+      "lastVisit": "Feb 12, 2026",
+      "conditions": "good",
+      "elev": 4257,
+      "sky": "open",
+      "cellSignal": 3,
+      "starlinkOk": true,
+      "water": true,
+      "fee": "$0 (purchase)",
+      "notes": 2
+    },
+    {
+      "id": "vanhorn-rv",
+      "name": "Mountain Time RV park",
+      "type": "campsite",
+      "jurisdiction": "Private",
+      "landUnit": "Van Horn, TX",
+      "coords": [
+        -104.84,
+        31.04
+      ],
+      "visits": 2,
+      "lastVisit": "Feb 13, 2026",
+      "conditions": "good",
+      "elev": 4019,
+      "sky": "open",
+      "cellSignal": 4,
+      "starlinkOk": true,
+      "water": true,
+      "fee": "$32/night",
+      "notes": 1
+    },
+    {
+      "id": "kelso-dunes-th",
+      "name": "Kelso Dunes trailhead",
+      "type": "trailhead",
+      "jurisdiction": "NPS",
+      "landUnit": "Mojave preserve",
+      "coords": [
+        -115.71,
+        34.89
+      ],
+      "visits": 5,
+      "lastVisit": "Apr 27, 2026",
+      "conditions": "good",
+      "elev": 2789,
+      "sky": "open",
+      "cellSignal": 1,
+      "starlinkOk": true,
+      "water": false,
+      "fee": "free",
+      "notes": 4
+    },
+    {
+      "id": "afton-canyon",
+      "name": "Afton Canyon",
+      "type": "campsite",
+      "jurisdiction": "BLM",
+      "landUnit": "Afton SRMA",
+      "coords": [
+        -116.39,
+        35.04
+      ],
+      "visits": 3,
+      "lastVisit": "Mar 8, 2026",
+      "conditions": "watch",
+      "elev": 1432,
+      "sky": "partial",
+      "cellSignal": 2,
+      "starlinkOk": true,
+      "water": true,
+      "fee": "$6/night",
+      "notes": 5,
+      "hazard": "Spring flash flood risk — check forecast"
+    },
+    {
+      "id": "weatherford-hi",
+      "name": "Weatherford Holiday Inn lot",
+      "type": "workspot",
+      "jurisdiction": "Private",
+      "landUnit": "Weatherford, TX",
+      "coords": [
+        -97.8,
+        32.76
+      ],
+      "visits": 1,
+      "lastVisit": "Nov 4, 2025",
+      "conditions": "watch",
+      "elev": 1010,
+      "sky": "partial",
+      "cellSignal": 3,
+      "starlinkOk": true,
+      "water": false,
+      "fee": "free (with permission)",
+      "notes": 2
+    },
+    {
+      "id": "shreveport-koa",
+      "name": "Shreveport KOA Holiday",
+      "type": "campsite",
+      "jurisdiction": "Private",
+      "landUnit": "Shreveport, LA",
+      "coords": [
+        -93.75,
+        32.5
+      ],
+      "visits": 1,
+      "lastVisit": "Nov 5, 2025",
+      "conditions": "good",
+      "elev": 167,
+      "sky": "partial",
+      "cellSignal": 5,
+      "starlinkOk": true,
+      "water": true,
+      "fee": "$48/night",
+      "notes": 1
+    },
+    {
+      "id": "deming-fallback",
+      "name": "Deming, NM fallback",
+      "type": "workspot",
+      "jurisdiction": "Private",
+      "landUnit": "Deming, NM",
+      "coords": [
+        -107.76,
+        32.27
+      ],
+      "visits": 0,
+      "lastVisit": null,
+      "conditions": "untested",
+      "elev": 4332,
+      "sky": "open",
+      "cellSignal": 2,
+      "starlinkOk": true,
+      "water": false,
+      "fee": "free",
+      "notes": 0
+    },
+    {
+      "id": "alabama-hills",
+      "name": "Alabama Hills BLM",
+      "type": "campsite",
+      "jurisdiction": "BLM",
+      "landUnit": "Alabama Hills NSA",
+      "coords": [
+        -118.16,
+        36.6
+      ],
+      "visits": 8,
+      "lastVisit": "Mar 22, 2026",
+      "conditions": "good",
+      "elev": 4622,
+      "sky": "open",
+      "cellSignal": 1,
+      "starlinkOk": true,
+      "water": false,
+      "fee": "free — 14 day limit",
+      "notes": 6
+    },
+    {
+      "id": "joshua-tree-w",
+      "name": "Joshua Tree — White Tank",
+      "type": "campsite",
+      "jurisdiction": "NPS",
+      "landUnit": "Joshua Tree NP",
+      "coords": [
+        -115.87,
+        33.94
+      ],
+      "visits": 4,
+      "lastVisit": "Feb 4, 2026",
+      "conditions": "good",
+      "elev": 3801,
+      "sky": "open",
+      "cellSignal": 0,
+      "starlinkOk": false,
+      "water": false,
+      "fee": "$25/night",
+      "notes": 3,
+      "hazard": "No cell or Starlink line-of-sight in some sites"
+    },
+    {
+      "id": "salton-spring",
+      "name": "Cottonwood Spring",
+      "type": "water",
+      "jurisdiction": "NPS",
+      "landUnit": "Joshua Tree NP",
+      "coords": [
+        -115.81,
+        33.74
+      ],
+      "visits": 2,
+      "lastVisit": "Feb 5, 2026",
+      "conditions": "good",
+      "elev": 2960,
+      "sky": "partial",
+      "cellSignal": 0,
+      "starlinkOk": true,
+      "water": true,
+      "fee": "free",
+      "notes": 1
+    },
+    {
+      "id": "salt-creek-haz",
+      "name": "Salt Creek washout",
+      "type": "hazard",
+      "jurisdiction": "BLM",
+      "landUnit": "Mecca Hills",
+      "coords": [
+        -115.97,
+        33.55
+      ],
+      "visits": 0,
+      "lastVisit": "Reported Apr 12",
+      "conditions": "avoid",
+      "elev": 410,
+      "sky": "open",
+      "cellSignal": 2,
+      "starlinkOk": true,
+      "water": false,
+      "fee": "n/a",
+      "notes": 1,
+      "hazard": "Road washed out post-storm Apr 8. Confirmed by neighbor truck."
+    }
+  ],
+  "fieldLogs": [
+    {
+      "id": "log-kelso-1",
+      "tripId": "kelso-26",
+      "tripName": "Kelso Dunes weekend",
+      "day": 1,
+      "date": "Apr 26, 2026",
+      "location": "Kelso BLM dispersed",
+      "weather": "Clear, 72°F day / 48°F night, wind W 8mph",
+      "notes": "Setup smooth. Solar charging hard from 8:30 onward. Cell weak but Starlink locked in 90s. Saw bighorn south of dunes at dusk.",
+      "power": 1612,
+      "water": 2.8,
+      "fuel": 0,
+      "waypoints": [
+        "Kelso BLM dispersed",
+        "Kelso Dunes trailhead"
+      ],
+      "photos": 4,
+      "synced": true
+    },
+    {
+      "id": "log-kelso-2",
+      "tripId": "kelso-26",
+      "tripName": "Kelso Dunes weekend",
+      "day": 2,
+      "date": "Apr 27, 2026",
+      "location": "Kelso BLM dispersed",
+      "weather": "High thin clouds, 68°F day, wind picked up 4pm",
+      "notes": "Long hike up Kelso Dunes — 3.2 mi RT. Battery hit 62% by sundown; need to reseat one panel cable, possible loss.",
+      "power": 1718,
+      "water": 3.1,
+      "fuel": 0,
+      "waypoints": [
+        "Kelso Dunes trailhead"
+      ],
+      "photos": 7,
+      "synced": true
+    },
+    {
+      "id": "log-kelso-3",
+      "tripId": "kelso-26",
+      "tripName": "Kelso Dunes weekend",
+      "day": 3,
+      "date": "Apr 28, 2026",
+      "location": "Mojave preserve",
+      "weather": "Clear and warm, 78°F",
+      "notes": "Departure day. Easy drive home. Coffee at Cima junction. No incidents.",
+      "power": 1480,
+      "water": 2.5,
+      "fuel": 32.4,
+      "waypoints": [],
+      "photos": 2,
+      "synced": true
+    }
+  ],
+  "reconciliation": {
+    "trip": "Kelso Dunes weekend",
+    "tripId": "kelso-26",
+    "window": "Apr 26 — Apr 28, 2026",
+    "days": 3,
+    "items": [
+      {
+        "key": "power_draw",
+        "label": "Power draw (avg/day)",
+        "unit": "Wh",
+        "predicted": 1576,
+        "actual": 1612,
+        "delta_pct": 2.3,
+        "note": "Slightly higher — monitor was on more than planned."
+      },
+      {
+        "key": "solar_prod",
+        "label": "Solar production (avg/day)",
+        "unit": "Wh",
+        "predicted": 1488,
+        "actual": 1210,
+        "delta_pct": -18.7,
+        "note": "Below forecast — thin cloud day 2 + suspected loose panel cable."
+      },
+      {
+        "key": "water_use",
+        "label": "Water consumption (avg/day)",
+        "unit": "gal",
+        "predicted": 2.4,
+        "actual": 2.8,
+        "delta_pct": 16.7,
+        "note": "Hike days run hotter on water. Adjust baseline."
+      },
+      {
+        "key": "drive_time",
+        "label": "Drive time (total)",
+        "unit": "h",
+        "predicted": 4.8,
+        "actual": 5.2,
+        "delta_pct": 8.3,
+        "note": "Two fuel stops vs. one planned."
+      },
+      {
+        "key": "peak_sun",
+        "label": "Peak sun hours (avg/day)",
+        "unit": "h",
+        "predicted": 6.2,
+        "actual": 5.4,
+        "delta_pct": -12.9,
+        "note": "Weather variance. PSH is a 30-day rolling figure, this trip is within normal scatter."
+      },
+      {
+        "key": "fuel",
+        "label": "Fuel consumed (total)",
+        "unit": "gal",
+        "predicted": 28,
+        "actual": 32.4,
+        "delta_pct": 15.7,
+        "note": "Headwind on return leg."
+      },
+      {
+        "key": "money",
+        "label": "Trip spend (total)",
+        "unit": "USD",
+        "predicted": 218,
+        "actual": 261.98,
+        "delta_pct": 20.2,
+        "note": "Fuel + extra coffee stop + supplies bumped over plan."
+      }
+    ],
+    "adjustmentsSuggested": [
+      {
+        "what": "Water rate",
+        "from": "2.4 gal/day",
+        "to": "2.7 gal/day",
+        "reason": "5-trip rolling avg shifted"
+      },
+      {
+        "what": "Peak sun hours",
+        "from": "6.2 h",
+        "to": "5.8 h",
+        "reason": "Spring shoulder season scatter"
+      },
+      {
+        "what": "Fuel budget / 100mi",
+        "from": "$11.30",
+        "to": "$12.85",
+        "reason": "Headwind variance + station pricing drift"
+      }
+    ]
+  },
+  "money": {
+    "currency": "USD",
+    "tripBudget": {
+      "tripId": "ga-pickup-26",
+      "total": 702,
+      "perDay": [
+        {
+          "day": 1,
+          "planned": 225,
+          "label": "Mojave → Van Horn"
+        },
+        {
+          "day": 2,
+          "planned": 240,
+          "label": "Van Horn → Shreveport"
+        },
+        {
+          "day": 3,
+          "planned": 237,
+          "label": "Shreveport → Atlanta"
+        }
+      ],
+      "categories": [
+        {
+          "key": "fuel",
+          "label": "Fuel",
+          "planned": 467,
+          "tone": "primary",
+          "note": "1,819 mi ÷ 15.0 mpg × $3.85/gal"
+        },
+        {
+          "key": "camp",
+          "label": "Camp fees",
+          "planned": 80,
+          "tone": "sage",
+          "note": "Van Horn $32 + Shreveport KOA $48"
+        },
+        {
+          "key": "food",
+          "label": "Food",
+          "planned": 90,
+          "tone": "primary",
+          "note": "1 diner stop, 4 gas-station meals"
+        },
+        {
+          "key": "supplies",
+          "label": "Supplies",
+          "planned": 40,
+          "tone": "sage",
+          "note": "Ice, water refill, dump fees"
+        },
+        {
+          "key": "maint",
+          "label": "Maintenance",
+          "planned": 0,
+          "tone": "primary",
+          "note": "None planned — preventive only"
+        },
+        {
+          "key": "misc",
+          "label": "Misc",
+          "planned": 25,
+          "tone": "sage",
+          "note": "Coffee, parking, tolls"
+        }
+      ],
+      "preTripSpend": [
+        {
+          "date": "May 16",
+          "merchant": "Vons Foods",
+          "amount": 64.3,
+          "category": "food"
+        },
+        {
+          "date": "May 17",
+          "merchant": "Costco Fuel — Mojave",
+          "amount": 78.5,
+          "category": "fuel"
+        },
+        {
+          "date": "May 17",
+          "merchant": "AutoZone",
+          "amount": 22.4,
+          "category": "supplies"
+        }
+      ]
+    },
+    "live": {
+      "tripId": "ga-pickup-26",
+      "day": 1,
+      "spentToday": 142.85,
+      "remainingDayBudget": 82.15,
+      "todayCharges": [
+        {
+          "time": "07:14 PDT",
+          "merchant": "Pilot — Baker, CA",
+          "amount": 68.2,
+          "category": "fuel"
+        },
+        {
+          "time": "09:46 MDT",
+          "merchant": "Lordsburg Co-op",
+          "amount": 12.4,
+          "category": "supplies"
+        },
+        {
+          "time": "12:48 MDT",
+          "merchant": "El Charro — Lordsburg",
+          "amount": 18.75,
+          "category": "food"
+        },
+        {
+          "time": "15:32 MDT",
+          "merchant": "Shell — Las Cruces",
+          "amount": 43.5,
+          "category": "fuel"
+        }
+      ]
+    },
+    "lastTrip": {
+      "tripId": "kelso-26",
+      "name": "Kelso Dunes weekend",
+      "window": "Apr 26 — Apr 28, 2026",
+      "planned": 218,
+      "actual": 261.98,
+      "categories": [
+        {
+          "key": "fuel",
+          "label": "Fuel",
+          "planned": 128,
+          "actual": 142.18
+        },
+        {
+          "key": "camp",
+          "label": "Camp fees",
+          "planned": 0,
+          "actual": 0
+        },
+        {
+          "key": "food",
+          "label": "Food",
+          "planned": 60,
+          "actual": 73.3
+        },
+        {
+          "key": "supplies",
+          "label": "Supplies",
+          "planned": 20,
+          "actual": 29
+        },
+        {
+          "key": "maint",
+          "label": "Maintenance",
+          "planned": 0,
+          "actual": 1
+        },
+        {
+          "key": "misc",
+          "label": "Misc",
+          "planned": 10,
+          "actual": 16.5
+        }
+      ]
+    },
+    "transactions": {
+      "source": "Chase Sapphire · chase_apr2026.csv",
+      "uploadedAt": "May 2, 2026 · 21:14 PDT",
+      "uploadedBy": "manual import",
+      "parsed": 9,
+      "autoCategorized": 7,
+      "needsReview": 2,
+      "tripWindow": "Apr 26 — Apr 28, 2026",
+      "rows": [
+        {
+          "id": "tx1",
+          "date": "Apr 25",
+          "merchant": "Vons Foods — Barstow",
+          "raw": "VONS #2841 BARSTOW CA",
+          "amount": 23.4,
+          "category": "food",
+          "status": "matched",
+          "confidence": 0.96
+        },
+        {
+          "id": "tx2",
+          "date": "Apr 25",
+          "merchant": "Walmart — Las Vegas",
+          "raw": "WAL-MART #1834 N LAS VEGAS",
+          "amount": 17,
+          "category": "supplies",
+          "status": "matched",
+          "confidence": 0.88,
+          "note": "5-gal water jug"
+        },
+        {
+          "id": "tx3",
+          "date": "Apr 26",
+          "merchant": "Shell — Baker",
+          "raw": "SHELL OIL 5713 BAKER CA",
+          "amount": 52.18,
+          "category": "fuel",
+          "status": "matched",
+          "confidence": 0.99
+        },
+        {
+          "id": "tx4",
+          "date": "Apr 26",
+          "merchant": "Baker Bottle Shop",
+          "raw": "BAKER BOTTLE SHOP",
+          "amount": 11.4,
+          "category": "supplies",
+          "status": "needs-review",
+          "confidence": 0.51,
+          "note": "Could be food (ice + bag of chips)"
+        },
+        {
+          "id": "tx5",
+          "date": "Apr 26",
+          "merchant": "Bun Boy Burger",
+          "raw": "BUN BOY DRIVE-THRU BAKER",
+          "amount": 14.2,
+          "category": "food",
+          "status": "matched",
+          "confidence": 0.94
+        },
+        {
+          "id": "tx6",
+          "date": "Apr 27",
+          "merchant": "Joshua Tree Co-op",
+          "raw": "JT GENERAL STORE 29 PALMS",
+          "amount": 9.85,
+          "category": "food",
+          "status": "needs-review",
+          "confidence": 0.62,
+          "note": "Mixed receipt — snacks + duct tape"
+        },
+        {
+          "id": "tx7",
+          "date": "Apr 28",
+          "merchant": "Pilot — Cima",
+          "raw": "PILOT TRAV STOP 318 CIMA",
+          "amount": 48.5,
+          "category": "fuel",
+          "status": "matched",
+          "confidence": 0.98
+        },
+        {
+          "id": "tx8",
+          "date": "Apr 28",
+          "merchant": "Cima Roadhouse",
+          "raw": "CIMA ROADHOUSE CIMA CA",
+          "amount": 16.5,
+          "category": "misc",
+          "status": "matched",
+          "confidence": 0.78,
+          "note": "Coffee + scone"
+        },
+        {
+          "id": "tx9",
+          "date": "Apr 28",
+          "merchant": "Chevron — Barstow",
+          "raw": "CHEVRON 0287 BARSTOW CA",
+          "amount": 41.5,
+          "category": "fuel",
+          "status": "matched",
+          "confidence": 0.99
+        }
+      ]
+    },
+    "ytd": {
+      "year": 2026,
+      "tripsCompleted": 8,
+      "totalSpend": 1842.4,
+      "avgPerTrip": 230.3,
+      "topCategory": "fuel",
+      "topCategoryShare": 0.62
+    }
+  },
+  "routeViaPoints": [
+    [
+      -116.05,
+      35.05
+    ],
+    [
+      -115.1,
+      34.2
+    ],
+    [
+      -113.3,
+      33.8
+    ],
+    [
+      -111.15,
+      32.95
+    ],
+    [
+      -110,
+      32.45
+    ],
+    [
+      -108.71,
+      32.35
+    ],
+    [
+      -107.2,
+      32.3
+    ],
+    [
+      -106.1,
+      32.1
+    ],
+    [
+      -104.84,
+      31.04
+    ],
+    [
+      -102.2,
+      31.7
+    ],
+    [
+      -100,
+      32.05
+    ],
+    [
+      -98.5,
+      32.4
+    ],
+    [
+      -97.8,
+      32.76
+    ],
+    [
+      -96,
+      32.55
+    ],
+    [
+      -94.2,
+      32.5
+    ],
+    [
+      -93.75,
+      32.5
+    ],
+    [
+      -91.5,
+      32.8
+    ],
+    [
+      -89.2,
+      33.2
+    ],
+    [
+      -87,
+      33.5
+    ],
+    [
+      -85.5,
+      33.65
+    ],
+    [
+      -84.39,
+      33.75
+    ]
+  ]
+}

@@ -1,88 +1,123 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { AppShellUserMenu } from "@/components/AppShellUserMenu";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { ConnectivityBanner } from "@/components/shell/ConnectivityBanner";
+import { NavIcon } from "@/components/shell/NavIcon";
 
 type AppShellProps = {
   children: React.ReactNode;
 };
 
-const navItems = [
-  { href: "/trips", label: "Trips", disabled: false },
-  { href: "/rig", label: "Rig", disabled: false },
-] as const;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  count?: string | number;
+  matchPrefix?: string;
+};
+
+const tripNav: NavItem[] = [
+  { href: "/", label: "Dashboard", icon: "dashboard" },
+  { href: "/lifestyle/planner", label: "Trip planner", icon: "planner", count: "GA" },
+  { href: "/lifestyle/trip-detail", label: "Trip detail", icon: "trip" },
+  { href: "/lifestyle/budget", label: "Budgets", icon: "budget" },
+];
+
+const inFieldNav: NavItem[] = [
+  { href: "/lifestyle/monitor", label: "Real-time monitor", icon: "monitor", count: "live" },
+  { href: "/lifestyle/field-log", label: "Field log", icon: "log" },
+  { href: "/lifestyle/reconcile", label: "Reconcile", icon: "reconcile", count: "1" },
+];
+
+const catalogNav: NavItem[] = [
+  {
+    href: "/lifestyle/catalog",
+    label: "Locations",
+    icon: "location",
+    count: 142,
+    matchPrefix: "/lifestyle/catalog",
+  },
+];
+
+const systemNav: NavItem[] = [
+  { href: "/lifestyle/settings", label: "Settings", icon: "settings" },
+  { href: "/rig", label: "Rig & gear", icon: "trip" },
+];
+
+function isActive(pathname: string, item: NavItem): boolean {
+  if (item.matchPrefix) {
+    return pathname.startsWith(item.matchPrefix);
+  }
+  return pathname === item.href;
+}
+
+function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string }) {
+  const active = isActive(pathname, item);
+
+  return (
+    <Link
+      href={item.href}
+      className={`nav-item ${active ? "active" : ""}`}
+      aria-current={active ? "page" : undefined}
+    >
+      <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span className="nav-icon">
+          <NavIcon name={item.icon} />
+        </span>
+        {item.label}
+      </span>
+      {item.count !== undefined && <span className="nav-count">{item.count}</span>}
+    </Link>
+  );
+}
+
+function NavSection({ title, items, pathname }: { title: string; items: NavItem[]; pathname: string }) {
+  return (
+    <>
+      <div className="nav-section">{title}</div>
+      {items.map((item) => (
+        <SidebarNavItem key={item.href} item={item} pathname={pathname} />
+      ))}
+    </>
+  );
+}
 
 export function AppShell({ children }: AppShellProps) {
+  const pathname = usePathname();
+
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="hidden w-64 flex-col border-r border-border/80 bg-card/70 px-4 py-5 md:flex">
-        <div className="space-y-2">
-          <h1 className="text-lg font-semibold tracking-tight">Vagabond</h1>
-          <p className="text-sm text-muted-foreground">Offline-first overland planner</p>
+    <div className="app">
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-mark">V</div>
+          <div>
+            <div className="brand-name">Vagabond</div>
+            <div className="brand-sub">Lifestyle manager</div>
+          </div>
         </div>
-        <Separator className="my-4" />
-        <nav className="space-y-1">
-          {navItems.map((item) =>
-            item.disabled ? (
-              <span
-                key={item.label}
-                aria-disabled
-                className={cn(
-                  "block rounded-md px-3 py-2 text-sm text-muted-foreground opacity-50",
-                  "cursor-not-allowed",
-                )}
-              >
-                {item.label}
-              </span>
-            ) : (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
-              >
-                {item.label}
-              </Link>
-            ),
-          )}
+
+        <nav className="nav">
+          <NavSection title="Trip" items={tripNav} pathname={pathname} />
+          <NavSection title="In field" items={inFieldNav} pathname={pathname} />
+          <NavSection title="Catalog" items={catalogNav} pathname={pathname} />
+          <NavSection title="System" items={systemNav} pathname={pathname} />
         </nav>
-        <div className="mt-auto border-t border-border/80 pt-4">
-          <AppShellUserMenu />
+
+        <div className="sidebar-footer">
+          <span className="dot" /> Self-hosted · <span className="mono" style={{ fontSize: 11 }}>v0.3.1</span>
+          <div style={{ marginLeft: "auto" }}>
+            <AppShellUserMenu compact />
+          </div>
         </div>
       </aside>
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="border-b border-border/80 bg-card/40 px-4 py-3 md:hidden">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Vagabond</p>
-              <p className="text-xs text-muted-foreground">Overland planner</p>
-            </div>
-            <div className="shrink-0">
-              <AppShellUserMenu compact />
-            </div>
-          </div>
-          <nav className="flex gap-2">
-            {navItems.map((item) =>
-              item.disabled ? (
-                <span key={item.label} className="text-xs text-muted-foreground opacity-50">
-                  {item.label}
-                </span>
-              ) : (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-md px-2 py-1 text-xs font-medium hover:bg-muted"
-                >
-                  {item.label}
-                </Link>
-              ),
-            )}
-          </nav>
-        </header>
-        <main className="min-h-0 flex-1">{children}</main>
-      </div>
+
+      <main className="main">
+        <ConnectivityBanner />
+        {children}
+      </main>
     </div>
   );
 }
