@@ -90,17 +90,21 @@ export function FieldLogEntryForm({
       return;
     }
 
-    await upsert.mutateAsync({
-      date: inputDate,
-      input: {
-        log_date: inputDate,
-        notes: notes.trim() ? notes.trim() : null,
-        actual_power_consumed_wh: powerParsed.value,
-        actual_water_consumed_gal: waterParsed.value,
-        actual_weather: weather.trim() ? weather.trim() : null,
-      },
-    });
-    onSuccess();
+    try {
+      await upsert.mutateAsync({
+        date: inputDate,
+        input: {
+          log_date: inputDate,
+          notes: notes.trim() ? notes.trim() : null,
+          actual_power_consumed_wh: powerParsed.value,
+          actual_water_consumed_gal: waterParsed.value,
+          actual_weather: weather.trim() ? weather.trim() : null,
+        },
+      });
+      onSuccess();
+    } catch {
+      // Error is surfaced via upsert.error; avoid unhandled rejection
+    }
   }
 
   return (

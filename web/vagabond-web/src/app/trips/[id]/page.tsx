@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } f
 import Map, { type MapHandle } from "@/components/Map";
 import { AddWaypointDialog } from "@/components/trips/AddWaypointDialog";
 import { ImportGpxDialog } from "@/components/trips/ImportGpxDialog";
+import { LogEventDialog } from "@/components/trips/LogEventDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -33,9 +34,48 @@ import {
   tripLegsQueryKey,
 } from "@/hooks/useWaypoints";
 import { useDeleteTrip, useTrip, useUpdateTrip } from "@/hooks/useTrips";
-import { ApiClientError, listTripLegs } from "@/lib/api";
+import { useFieldLogs } from "@/hooks/useFieldLogs";
+import { useCreateTripEvent, useDeleteTripEvent, useTripEvents } from "@/hooks/useTripEvents";
+import { ApiClientError, listTripLegs, type CreateTripEventInput, type TripEvent } from "@/lib/api";
 
 const DEFAULT_CENTER: [number, number] = [-117.0, 35.0];
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  trip_start: "Trip Start",
+  trip_end: "Trip End",
+  fuel_fill: "Fuel Fill",
+  water_fill: "Water Fill",
+  stop: "Stop",
+  campsite: "Campsite",
+  hike: "Hike",
+  vehicle_issue: "Vehicle Issue",
+  note: "Note",
+};
+
+function eventSummary(event: TripEvent): string | null {
+  const p = event.payload;
+  if (!p) return null;
+  switch (event.event_type) {
+    case "fuel_fill":
+      return `${p.gallons} gal`;
+    case "water_fill":
+      return `${p.gallons} gal${p.source ? ` — ${p.source}` : ""}`;
+    case "stop":
+      return String(p.stop_type).replace(/_/g, " ");
+    case "campsite":
+      return String(p.stay_type).replace(/_/g, " ");
+    case "hike":
+      return p.trail_name
+        ? String(p.trail_name)
+        : p.distance_miles
+          ? `${p.distance_miles} mi`
+          : null;
+    case "vehicle_issue":
+      return `${p.severity} — ${String(p.description).slice(0, 40)}`;
+    default:
+      return null;
+  }
+}
 const NAME_MAX_LENGTH = 256;
 const DESCRIPTION_MAX_LENGTH = 8000;
 const MAX_GPX_BYTES = 10 * 1024 * 1024;
@@ -67,6 +107,10 @@ export default function TripDetailPage() {
   const createWaypointMutation = useCreateWaypoint();
   const deleteWaypointMutation = useDeleteWaypoint();
   const importGpxMutation = useImportGpx();
+  const eventsQuery = useTripEvents(tripId);
+  const fieldLogsQuery = useFieldLogs(tripId);
+  const createEventMutation = useCreateTripEvent();
+  const deleteEventMutation = useDeleteTripEvent();
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
@@ -81,6 +125,9 @@ export default function TripDetailPage() {
   const [pendingLon, setPendingLon] = useState(0);
   const [pendingLat, setPendingLat] = useState(0);
 
+  const [logEventDialogOpen, setLogEventDialogOpen] = useState(false);
+  const [logEventError, setLogEventError] = useState<string | null>(null);
+
   const [importGpxDialogOpen, setImportGpxDialogOpen] = useState(false);
   const [importGpxFile, setImportGpxFile] = useState<File | null>(null);
   const [gpxFileSizeError, setGpxFileSizeError] = useState<string | null>(null);
@@ -94,6 +141,11 @@ export default function TripDetailPage() {
     () => waypointsQuery.data?.data ?? [],
     [waypointsQuery.data],
   );
+  const events = useMemo(
+    () => eventsQuery.data?.data ?? [],
+    [eventsQuery.data],
+  );
+  const fieldLogCount = fieldLogsQuery.data?.meta?.total ?? fieldLogsQuery.data?.data?.length ?? 0;
 
   useEffect(() => {
     if (!trip) {
@@ -309,6 +361,29 @@ export default function TripDetailPage() {
     } catch (error) {
       setSaveState("error");
       setSaveMessage(error instanceof Error ? error.message : "Failed to delete waypoint.");
+    }
+  }
+
+  async function handleLogEventConfirm(input: CreateTripEventInput) {
+    try {
+      await createEventMutation.mutateAsync({ tripId, input });
+      setLogEventDialogOpen(false);
+      setLogEventError(null);
+    } catch (error) {
+      setLogEventError(error instanceof Error ? error.message : "Failed to log event.");
+    }
+  }
+
+  async function handleDeleteEventClick(eventId: string, eventType: string) {
+    const label = EVENT_TYPE_LABELS[eventType] ?? eventType;
+    if (!window.confirm(`Delete "${label}" event?`)) {
+      return;
+    }
+    try {
+      await deleteEventMutation.mutateAsync({ tripId, eventId });
+    } catch (error) {
+      setSaveState("error");
+      setSaveMessage(error instanceof Error ? error.message : "Failed to delete event.");
     }
   }
 
@@ -529,9 +604,6 @@ export default function TripDetailPage() {
                   onChange={handleImportGpxFileInputChange}
                 />
                 <div className="flex flex-wrap justify-end gap-2 pt-1">
-                  <Button type="button" variant="secondary" size="sm" asChild>
-                    <Link href={`/trips/${tripId}/log`}>Field Log</Link>
-                  </Button>
                   <Button
                     type="button"
                     variant="secondary"
@@ -555,6 +627,84 @@ export default function TripDetailPage() {
                 {addingWaypoint ? (
                   <p className="text-xs text-muted-foreground">Click the map to place a waypoint.</p>
                 ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    In the field
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground/90">Events</span> capture moments with timestamps;
+                  the{" "}
+                  <span className="font-medium text-foreground/90">field log</span> is one entry per day for notes
+                  and totals.
+                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Events ({eventsQuery.isLoading ? "…" : events.length})
+                  </p>
+                  <Button type="button" variant="outline" size="sm" asChild>
+                    <Link href={`/trips/${tripId}/log`}>
+                      Field log
+                      {fieldLogsQuery.isLoading
+                        ? " · …"
+                        : ` · ${fieldLogCount} ${fieldLogCount === 1 ? "day" : "days"}`}
+                    </Link>
+                  </Button>
+                </div>
+                <Separator />
+                {eventsQuery.isLoading ? (
+                  <Skeleton className="h-12 w-full" />
+                ) : events.length === 0 ? (
+                  <p className="text-muted-foreground">No events logged.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {events.map((event) => (
+                      <li key={event.id}>
+                        <div className="group flex items-start gap-2 rounded-md py-1 pl-1 pr-0">
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-xs font-medium">
+                                {EVENT_TYPE_LABELS[event.event_type] ?? event.event_type}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDateTime(event.occurred_at)}
+                              </span>
+                            </div>
+                            {(eventSummary(event) ?? event.notes) ? (
+                              <p className="truncate text-xs text-muted-foreground">
+                                {eventSummary(event) ?? event.notes}
+                              </p>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                            aria-label={`Delete ${EVENT_TYPE_LABELS[event.event_type] ?? event.event_type} event`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteEventClick(event.id, event.event_type);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="flex justify-end pt-1">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setLogEventDialogOpen(true)}
+                  >
+                    + Log Event
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-1 text-muted-foreground">
@@ -611,6 +761,17 @@ export default function TripDetailPage() {
         onCancel={handleImportGpxCancel}
         isPending={importGpxMutation.isPending}
         error={importGpxErrorMessage}
+      />
+
+      <LogEventDialog
+        open={logEventDialogOpen}
+        onConfirm={(input) => void handleLogEventConfirm(input)}
+        onCancel={() => {
+          setLogEventDialogOpen(false);
+          setLogEventError(null);
+        }}
+        isPending={createEventMutation.isPending}
+        error={logEventError}
       />
     </main>
   );

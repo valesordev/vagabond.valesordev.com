@@ -73,7 +73,7 @@ pub async fn list_for_trip(
         INNER JOIN trips t ON t.id = f.trip_id
         WHERE f.trip_id = $1
           AND t.user_id = $2
-        ORDER BY f.log_date ASC
+        ORDER BY f.log_date DESC
         "#,
     )
     .bind(trip_id)

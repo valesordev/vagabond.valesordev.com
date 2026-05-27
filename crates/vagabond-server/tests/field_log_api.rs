@@ -252,8 +252,8 @@ async fn create_get_upsert_and_list_logs_roundtrip() {
     let list_value = parse_json_body(&list_body);
     assert_eq!(list_value["meta"]["total"], 2);
     let logs = list_value["data"].as_array().expect("logs array");
-    assert_eq!(logs[0]["log_date"], "2026-04-08");
-    assert_eq!(logs[1]["log_date"], "2026-04-10");
+    assert_eq!(logs[0]["log_date"], "2026-04-10");
+    assert_eq!(logs[1]["log_date"], "2026-04-08");
 }
 
 #[tokio::test]

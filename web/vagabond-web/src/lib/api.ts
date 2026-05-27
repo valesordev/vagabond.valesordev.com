@@ -585,3 +585,63 @@ export function deleteFieldLog(tripId: string, date: string): Promise<ApiEnvelop
     method: "DELETE",
   });
 }
+
+export type TripEvent = {
+  id: string;
+  trip_id: string;
+  event_type: string;
+  occurred_at: string;
+  ended_at: string | null;
+  lon: number | null;
+  lat: number | null;
+  notes: string | null;
+  payload: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ListTripEventsMeta = {
+  total: number;
+};
+
+export type DeleteTripEventMeta = {
+  deleted: boolean;
+};
+
+export type CreateTripEventInput = {
+  event_type: string;
+  occurred_at?: string;
+  ended_at?: string | null;
+  lon?: number | null;
+  lat?: number | null;
+  notes?: string | null;
+  payload?: Record<string, unknown> | null;
+};
+
+export function listTripEvents(
+  tripId: string,
+  eventType?: string,
+): Promise<ApiEnvelope<TripEvent[], ListTripEventsMeta>> {
+  return request<TripEvent[], ListTripEventsMeta>(`/trips/${tripId}/events`, {
+    query: eventType ? { event_type: eventType } : undefined,
+  });
+}
+
+export function createTripEvent(
+  tripId: string,
+  input: CreateTripEventInput,
+): Promise<ApiEnvelope<TripEvent, Record<string, never>>> {
+  return request<TripEvent, Record<string, never>>(`/trips/${tripId}/events`, {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function deleteTripEvent(
+  tripId: string,
+  eventId: string,
+): Promise<ApiEnvelope<null, DeleteTripEventMeta>> {
+  return request<null, DeleteTripEventMeta>(`/trips/${tripId}/events/${eventId}`, {
+    method: "DELETE",
+  });
+}

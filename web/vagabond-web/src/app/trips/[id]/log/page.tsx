@@ -23,7 +23,12 @@ function formatLogHeading(isoDate: string): string {
     return isoDate;
   }
   const dt = new Date(y, m - 1, d);
-  return dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  return dt.toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 function formatPowerWh(v: number): string {
@@ -158,7 +163,27 @@ export default function TripFieldLogPage() {
                 ? "Trip Log · …"
                 : `Trip Log · ${logs.length} ${logs.length === 1 ? "entry" : "entries"}`}
             </p>
+            <p className="text-xs text-muted-foreground">
+              Daily notes and usage totals. For timestamps and quick stops (fuel, campsite, etc.),{" "}
+              <Link href={`/trips/${tripId}`} className="text-foreground underline-offset-4 hover:underline">
+                log events on the trip page
+              </Link>
+              .
+            </p>
           </header>
+
+          {fieldLogsQuery.isError ? (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
+              <p className="text-destructive">
+                {fieldLogsQuery.error instanceof Error
+                  ? fieldLogsQuery.error.message
+                  : "Could not load field log entries."}
+              </p>
+              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void fieldLogsQuery.refetch()}>
+                Try again
+              </Button>
+            </div>
+          ) : null}
 
           {fieldLogsQuery.isLoading ? (
             <div className="space-y-3">

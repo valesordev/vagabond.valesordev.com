@@ -1,0 +1,149 @@
+---
+# docker-compose.pi.yml — Vagabond edge stack for Raspberry Pi
+#
+# Usage (Pi or laptop with Pi connected):
+#   docker compose -f docker-compose.pi.yml up -d
+#   docker compose -f docker-compose.pi.yml down
+#
+# This file is standalone — it does NOT overlay docker-compose.yml.
+# It includes only the services needed for the Pi edge deployment (ADR-014).
+# Keycloak, MinIO, and the heavy observability stack are excluded.
+#
+# Auth: VAGABOND_DEV_AUTH=true (single-user, no Keycloak required).
+# Tiles: Martin served directly; PMTiles bundle served via nginx.
+# Telemetry: Alloy agent ships GPS + node metrics to local vagabond-server.
+
+name: vagabond-pi
+
+services:
+
+  # ── PostgreSQL + PostGIS ──────────────────────────────────────────────────
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: vagabond-pi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-vagabond}
+      POSTGRES_USER:     ${POSTGRES_USER:-vagabond}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vagabond}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-seed:
+    image: postgis/postgis:16-3.4
+    container_name: vagabond-pi-seed
+    restart: "no"
+    environment:
+      PGHOST:     postgres
+      PGPORT:     5432
+      PGDATABASE: ${POSTGRES_DB:-vagabond}
+      PGUSER:     ${POSTGRES_USER:-vagabond}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      sh -ec "
+      until psql -v ON_ERROR_STOP=1 -tAc \"SELECT to_regclass('public.users') IS NOT NULL\" | grep -q t; do
+        echo 'waiting for users table...';
+        sleep 2;
+      done;
+      psql -v ON_ERROR_STOP=1 -c
+      \"INSERT INTO users (id, keycloak_sub, email, display_name)
+      VALUES ('${VAGABOND_DEV_USER_ID:?VAGABOND_DEV_USER_ID is required}',
+              'dev:${VAGABOND_DEV_USER_ID}',
+              '${VAGABOND_DEV_USER_EMAIL:-brian@vagabond.local}',
+              '${VAGABOND_DEV_USER_DISPLAY_NAME:-Brian}')
+      ON CONFLICT (id) DO UPDATE SET
+        display_name = EXCLUDED.display_name,
+        updated_at   = NOW();\""
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Vagabond API server ───────────────────────────────────────────────────
+  vagabond-server:
+    image: ${VAGABOND_SERVER_IMAGE:-ghcr.io/solo-seven/vagabond-server:latest}
+    container_name: vagabond-pi-server
+    restart: unless-stopped
+    environment:
+      DATABASE_URL:      postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vagabond}
+      LISTEN_ADDR:       0.0.0.0:3001
+      JWT_SECRET:        ${JWT_SECRET:?JWT_SECRET is required}
+      VAGABOND_DEV_AUTH: "true"
+      RUST_LOG:          ${RUST_LOG:-info}
+    ports:
+      - "${SERVER_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ── Martin (MVT tile server) ──────────────────────────────────────────────
+  martin:
+    image: ghcr.io/maplibre/martin:latest
+    container_name: vagabond-pi-martin
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vagabond}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Vagabond Web (Next.js) ────────────────────────────────────────────────
+  vagabond-web:
+    image: ${VAGABOND_WEB_IMAGE:-ghcr.io/solo-seven/vagabond-web:latest}
+    container_name: vagabond-pi-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL:            http://vagabond.local
+      NEXT_PUBLIC_MARTIN_URL:         http://vagabond.local/tiles
+      NEXT_PUBLIC_KEYCLOAK_URL:       ""
+      NEXT_PUBLIC_KEYCLOAK_REALM:     ""
+      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ""
+      NEXT_PUBLIC_VAGABOND_DEV_AUTH:  "true"
+      NEXTAUTH_URL:                   http://vagabond.local
+      NEXTAUTH_SECRET:                ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}
+    depends_on:
+      - vagabond-server
+
+  # ── Grafana Alloy (GPS + telemetry agent) ─────────────────────────────────
+  alloy:
+    image: grafana/alloy:latest
+    container_name: vagabond-pi-alloy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./agent/alloy-config/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_wal:/var/lib/alloy/data
+    environment:
+      VAGABOND_INGEST_URL: http://127.0.0.1:3001/api/v1/telemetry/ingest
+      GPS_SIM_FILE:        ${GPS_SIM_FILE:-/dev/null}
+    command: ["run", "/etc/alloy/config.alloy"]
+    depends_on:
+      vagabond-server:
+        condition: service_healthy
+
+  # ── Nginx gateway ─────────────────────────────────────────────────────────
+  vagabond-gateway:
+    image: nginx:1.27-alpine
+    container_name: vagabond-pi-gateway
+    restart: unless-stopped
+    volumes:
+      - ./infra/nginx/pi.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - vagabond-web
+      - vagabond-server
+      - martin
+
+volumes:
+  postgres_data:
+  alloy_wal:

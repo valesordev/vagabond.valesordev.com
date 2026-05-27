@@ -3,6 +3,7 @@ use axum::{routing::get, Router};
 
 mod rigs;
 mod telemetry;
+mod trip_events;
 mod trips;
 
 pub fn router() -> Router<AppState> {
@@ -53,6 +54,16 @@ pub fn router() -> Router<AppState> {
             get(rigs::get_gear)
                 .put(rigs::update_gear)
                 .delete(rigs::delete_gear),
+        )
+        .route(
+            "/trips/:trip_id/events",
+            get(trip_events::list).post(trip_events::create),
+        )
+        .route(
+            "/trips/:trip_id/events/:event_id",
+            get(trip_events::get)
+                .put(trip_events::update)
+                .delete(trip_events::delete),
         )
         .route("/telemetry/ingest", axum::routing::post(telemetry::ingest))
 }

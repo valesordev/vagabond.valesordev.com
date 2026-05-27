@@ -9,5 +9,6 @@ pub mod field_log;
 pub mod geo;
 pub mod rig;
 pub mod trip;
+pub mod trip_event;
 
 pub use error::VagabondError;

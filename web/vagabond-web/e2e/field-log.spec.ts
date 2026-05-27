@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { apiPost } from "./helpers/api";
-import { todayIsoDate, uniqueName } from "./helpers/test-data";
+import { todayLocalIsoDate, uniqueName } from "./helpers/test-data";
 
 type Trip = { id: string; name: string };
 
@@ -16,8 +16,13 @@ test.describe("Field log CRUD", () => {
     tripId = trip.id;
   });
 
+  test("trip overview links to field log with day count", async ({ page }) => {
+    await page.goto(`/trips/${tripId}`);
+    await expect(page.getByRole("link", { name: /Field log · 0 days/ })).toBeVisible();
+  });
+
   test("creates, edits, and deletes a field log entry", async ({ page }) => {
-    const logDate = todayIsoDate();
+    const logDate = todayLocalIsoDate();
     const initialNotes = "Initial field log from Playwright";
     const updatedNotes = "Updated field log from Playwright";
     const newEntryButton = page.getByRole("button", { name: "+ New Entry" }).first();
