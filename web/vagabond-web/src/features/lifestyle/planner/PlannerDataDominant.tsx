@@ -8,6 +8,11 @@ import { ItineraryTable } from "./ItineraryTable";
 import { PlannerBudgetCard } from "./PlannerBudgetCard";
 import { PlannerRail } from "./PlannerRail";
 
+function tzDriftHours(crossesTz: string): string {
+  const match = crossesTz.match(/^\+(\d+)/);
+  return match ? `+${match[1]}` : "+3";
+}
+
 export function PlannerDataDominant({
   stops,
   route,
@@ -20,6 +25,7 @@ export function PlannerDataDominant({
   setSelected: (id: string) => void;
 }) {
   const D = getVagabondMockData();
+  const { trip } = D;
   const sel = stops.find((s) => s.id === selectedId);
 
   return (
@@ -32,12 +38,12 @@ export function PlannerDataDominant({
           className="card"
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr", gap: 16, padding: "14px 20px" }}
         >
-          <SummaryStat label="Distance" value="1,819" unit="mi" />
-          <SummaryStat label="Drive time" value="27.8" unit="h" />
-          <SummaryStat label="Camp nights" value="2" unit="" />
-          <SummaryStat label="Meetings" value="3" unit="" />
-          <SummaryStat label="TZ drift" value="+3" unit="h" caution />
-          <SummaryStat label="Budget" value={`$${D.money.tripBudget.total}`} unit="USD" />
+          <SummaryStat label="Distance" value={trip.totalMiles.toLocaleString()} unit="mi" />
+          <SummaryStat label="Drive time" value={String(trip.driveHours)} unit="h" />
+          <SummaryStat label="Camp nights" value={String(trip.campNights)} unit="" />
+          <SummaryStat label="Meetings" value={String(trip.meetings)} unit="" />
+          <SummaryStat label="TZ drift" value={tzDriftHours(trip.crossesTz)} unit="h" caution />
+          <SummaryStat label="Budget" value={`$${D.money.tripBudget.total.toLocaleString()}`} unit="USD" />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16, flex: 1, minHeight: 0 }}>

@@ -5,8 +5,10 @@ import { getVagabondMockData, type Stop } from "@/lib/mock/vagabond-data";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
+const STUB_REPLY = "[AI assistant not yet configured — see Story 13 for wiring]";
+
 async function completeAssistant(_prompt: string): Promise<string> {
-  return "Assistant integration pending — wire to trip co-pilot API per ADR-011.";
+  return STUB_REPLY;
 }
 
 export function PlannerAssistant({
@@ -76,16 +78,7 @@ export function PlannerAssistant({
     setMessages(next);
     setBusy(true);
     try {
-      const prompt = `You are the Vagabond trip co-pilot — a concise, calm assistant for a self-hosted RV trip planner. Reply in short, plain sentences. Surface concrete suggestions and tradeoffs over generic advice. When numbers help, use them. Do not invent stops that aren't in the trip; you can propose alternatives, but flag them as proposals.
-
-== Trip snapshot ==
-${tripContext}
-
-== Conversation ==
-${next.map((m) => `${m.role === "user" ? "USER" : "ASSISTANT"}: ${m.content}`).join("\n\n")}
-
-ASSISTANT:`;
-      const reply = await completeAssistant(prompt);
+      const reply = await completeAssistant(tripContext);
       setMessages((cur) => [...cur, { role: "assistant", content: reply.trim() }]);
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));
@@ -116,7 +109,7 @@ ASSISTANT:`;
           </div>
           <div style={{ fontSize: 12, color: "var(--color-text-soft)" }}>
             Trip-aware. <span className="mono" style={{ fontSize: 11 }}>{stops.length} stops</span> &middot;{" "}
-            <span className="mono" style={{ fontSize: 11 }}>3 meetings</span> in context.
+            <span className="mono" style={{ fontSize: 11 }}>{D.trip.meetings} meetings</span> in context.
           </div>
         </div>
         {messages.length > 0 && (

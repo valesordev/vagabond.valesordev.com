@@ -1,34 +1,25 @@
 "use client";
 
 import { getVagabondMockData } from "@/lib/mock/vagabond-data";
-import { BigStat, SectionHead } from "../primitives";
+import { BigStat, SectionHead, SimpleTopbar } from "../primitives";
 import type { LifestyleNavigateProps } from "../types";
 import { TransactionsReconcile } from "./TransactionsReconcile";
 
 export function ReconcileScreen(_props: LifestyleNavigateProps = {}) {
   const D = getVagabondMockData();
   const r = D.reconciliation;
+  const tripCode = r.tripId.toUpperCase();
 
   return (
     <>
-      <div className="topbar">
-        <div className="topbar-left">
-          <div>
-            <div className="topbar-crumb">
-              Trip &middot; KELSO-26 &middot; {r.window}
-            </div>
-            <div className="topbar-title">Reconcile actuals</div>
-          </div>
-        </div>
-        <div className="topbar-right">
-          <button type="button" className="btn-sm ghost">
-            Export CSV
-          </button>
-          <button type="button" className="btn-sm sage">
-            Apply suggested adjustments
-          </button>
-        </div>
-      </div>
+      <SimpleTopbar crumb={`Trip · ${tripCode} · ${r.window}`} title="Reconcile actuals">
+        <button type="button" className="btn-sm ghost">
+          Export CSV
+        </button>
+        <button type="button" className="btn-sm sage">
+          Apply suggested adjustments
+        </button>
+      </SimpleTopbar>
 
       <div className="page page-narrow">
         <div className="detail-hero">

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { AppShellUserMenu } from "@/components/AppShellUserMenu";
-import { ConnectivityBanner } from "@/components/shell/ConnectivityBanner";
-import { NavIcon } from "@/components/shell/NavIcon";
+import { ConnectivityBannerFromPrefs } from "@/components/shell/ConnectivityBanner";
+import { NavIcon, type NavIconName } from "@/components/shell/NavIcon";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -14,13 +14,13 @@ type AppShellProps = {
 type NavItem = {
   href: string;
   label: string;
-  icon: string;
+  icon: NavIconName;
   count?: string | number;
   matchPrefix?: string;
 };
 
 const tripNav: NavItem[] = [
-  { href: "/", label: "Dashboard", icon: "dashboard" },
+  { href: "/lifestyle", label: "Dashboard", icon: "dashboard" },
   { href: "/lifestyle/planner", label: "Trip planner", icon: "planner", count: "GA" },
   { href: "/lifestyle/trip-detail", label: "Trip detail", icon: "trip" },
   { href: "/lifestyle/budget", label: "Budgets", icon: "budget" },
@@ -44,12 +44,11 @@ const catalogNav: NavItem[] = [
 
 const systemNav: NavItem[] = [
   { href: "/lifestyle/settings", label: "Settings", icon: "settings" },
-  { href: "/rig", label: "Rig & gear", icon: "trip" },
 ];
 
 function isActive(pathname: string, item: NavItem): boolean {
   if (item.matchPrefix) {
-    return pathname.startsWith(item.matchPrefix);
+    return pathname === item.matchPrefix || pathname.startsWith(`${item.matchPrefix}/`);
   }
   return pathname === item.href;
 }
@@ -115,7 +114,7 @@ export function AppShell({ children }: AppShellProps) {
       </aside>
 
       <main className="main">
-        <ConnectivityBanner />
+        <ConnectivityBannerFromPrefs />
         {children}
       </main>
     </div>

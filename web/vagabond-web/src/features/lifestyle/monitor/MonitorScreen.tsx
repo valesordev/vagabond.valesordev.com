@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getVagabondMockData } from "@/lib/mock/vagabond-data";
+import { useLifestyleNavigate } from "../navigation";
 import { VagabondMap } from "../map/VagabondMap";
 import type { ConnectivityMode, LifestyleNavigateProps } from "../types";
 import { VehicleOverlay } from "./VehicleOverlay";
@@ -23,7 +24,8 @@ export type MonitorScreenProps = LifestyleNavigateProps & {
   connectivity?: ConnectivityMode;
 };
 
-export function MonitorScreen({ connectivity = "online" }: MonitorScreenProps = {}) {
+export function MonitorScreen({ onNavigate, connectivity = "online" }: MonitorScreenProps = {}) {
+  const goto = useLifestyleNavigate({ onNavigate });
   const D = getVagabondMockData();
   const M = D.money;
   const live = M.live;
@@ -108,7 +110,7 @@ export function MonitorScreen({ connectivity = "online" }: MonitorScreenProps = 
               unit={`/ $${(live.spentToday + live.remainingDayBudget).toFixed(0)}`}
             />
           </div>
-          <button type="button" className="btn-sm ghost">
+          <button type="button" className="btn-sm ghost" onClick={() => goto("planner")}>
             Open planner
           </button>
         </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getVagabondMockData } from "@/lib/mock/vagabond-data";
-import { FactRow } from "../primitives";
+import { FactRow, SimpleTopbar } from "../primitives";
 import type { ConnectivityMode, LifestyleNavigateProps } from "../types";
 import { ActualCard } from "./ActualCard";
 
@@ -15,35 +15,32 @@ export function FieldLogScreen({ connectivity = "online" }: FieldLogScreenProps 
   const [activeDay, setActiveDay] = useState(2);
   const logs = D.fieldLogs;
   const active = logs.find((l) => l.day === activeDay) || logs[1];
+  const tripCode = (active.tripId ?? "kelso-26").toUpperCase();
+  const todayDay = logs.find((l) => l.day === 2)?.day ?? activeDay;
 
   const isOffline = connectivity === "offline";
   const isStarlink = connectivity === "starlink";
 
   return (
     <>
-      <div className="topbar">
-        <div className="topbar-left">
-          <div>
-            <div className="topbar-crumb">Trip &middot; KELSO-26 &middot; In progress &middot; Day 2 of 3</div>
-            <div className="topbar-title">Field log &mdash; {active.tripName}</div>
-          </div>
-        </div>
-        <div className="topbar-right">
-          <span className="pill ok">
-            <span className="dot" />
-            Live trip
-          </span>
-          {isOffline ? (
-            <button type="button" className="btn-sm ghost" disabled>
-              Queue locally
-            </button>
-          ) : (
-            <button type="button" className="btn-sm sage">
-              Save log
-            </button>
-          )}
-        </div>
-      </div>
+      <SimpleTopbar
+        crumb={`Trip · ${tripCode} · In progress · Day ${todayDay} of ${logs.length}`}
+        title={`Field log — ${active.tripName}`}
+      >
+        <span className="pill ok">
+          <span className="dot" />
+          Live trip
+        </span>
+        {isOffline ? (
+          <button type="button" className="btn-sm ghost" disabled>
+            Queue locally
+          </button>
+        ) : (
+          <button type="button" className="btn-sm sage">
+            Save log
+          </button>
+        )}
+      </SimpleTopbar>
 
       <div className="page page-narrow">
         <div className="log-day-tabs">
@@ -51,11 +48,11 @@ export function FieldLogScreen({ connectivity = "online" }: FieldLogScreenProps 
             <button
               key={l.id}
               type="button"
-              className={`log-day-tab ${l.day === activeDay ? "active" : ""} ${l.day === 2 ? "today" : ""}`}
+              className={`log-day-tab ${l.day === activeDay ? "active" : ""} ${l.day === todayDay ? "today" : ""}`}
               onClick={() => setActiveDay(l.day)}
             >
               <span className="when">
-                Day {l.day} {l.day === 2 ? "· Today" : l.day < 2 ? "" : "· Future"}
+                Day {l.day} {l.day === todayDay ? "· Today" : l.day < todayDay ? "" : "· Future"}
               </span>
               <span>{l.date}</span>
             </button>
@@ -175,7 +172,7 @@ export function FieldLogScreen({ connectivity = "online" }: FieldLogScreenProps 
               >
                 <FactRow k="Trip" v={active.tripName} />
                 <FactRow k="Started" v={<span className="mono">Apr 26, 2026</span>} />
-                <FactRow k="Day" v={`${active.day} of 3`} />
+                <FactRow k="Day" v={`${active.day} of ${logs.length}`} />
                 <FactRow
                   k="Logs synced"
                   v={

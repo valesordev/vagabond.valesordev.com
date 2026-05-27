@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
+
 import { getVagabondMockData } from "@/lib/mock/vagabond-data";
-import { useLifestyleNavigate } from "../navigation";
-import { FactRow, SectionHead } from "../primitives";
+import { FactRow, SectionHead, SimpleTopbar } from "../primitives";
 import type { LifestyleNavigateProps } from "../types";
 import { CatalogMap } from "./CatalogMap";
 import { Signal, TypeChip } from "./catalog-primitives";
@@ -11,8 +12,7 @@ export type LocationDetailScreenProps = LifestyleNavigateProps & {
   locId?: string;
 };
 
-export function LocationDetailScreen({ onNavigate, locId }: LocationDetailScreenProps = {}) {
-  const goto = useLifestyleNavigate({ onNavigate });
+export function LocationDetailScreen({ locId }: LocationDetailScreenProps = {}) {
   const D = getVagabondMockData();
   const loc = D.catalog.find((l) => l.id === locId) || D.catalog[0];
 
@@ -36,35 +36,32 @@ export function LocationDetailScreen({ onNavigate, locId }: LocationDetailScreen
 
   return (
     <>
-      <div className="topbar">
-        <div className="topbar-left">
-          <div>
-            <div className="topbar-crumb">
-              <span style={{ cursor: "pointer", color: "var(--color-secondary)" }} onClick={() => goto("catalog")}>
-                ← Catalog
-              </span>
-              {" · "}
-              {loc.jurisdiction} · {loc.landUnit}
-            </div>
-            <div className="topbar-title">{loc.name}</div>
-          </div>
-        </div>
-        <div className="topbar-right">
-          <TypeChip type={loc.type} />
-          <span
-            className={`pill ${loc.conditions === "good" ? "ok" : loc.conditions === "avoid" ? "err" : "warn"}`}
-          >
-            <span className="dot" />
-            {loc.conditions}
-          </span>
-          <button type="button" className="btn-sm ghost">
-            Add to trip
-          </button>
-          <button type="button" className="btn-sm ghost">
-            Export GPX
-          </button>
-        </div>
-      </div>
+      <SimpleTopbar
+        crumb={
+          <>
+            <Link href="/lifestyle/catalog" style={{ color: "var(--color-secondary)" }}>
+              ← Catalog
+            </Link>
+            {" · "}
+            {loc.jurisdiction} · {loc.landUnit}
+          </>
+        }
+        title={loc.name}
+      >
+        <TypeChip type={loc.type} />
+        <span
+          className={`pill ${loc.conditions === "good" ? "ok" : loc.conditions === "avoid" ? "err" : "warn"}`}
+        >
+          <span className="dot" />
+          {loc.conditions}
+        </span>
+        <button type="button" className="btn-sm ghost">
+          Add to trip
+        </button>
+        <button type="button" className="btn-sm ghost">
+          Export GPX
+        </button>
+      </SimpleTopbar>
 
       <div className="page page-narrow">
         <div className="loc-detail-grid">

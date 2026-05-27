@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { getVagabondMockData } from "@/lib/mock/vagabond-data";
 import { useLifestyleNavigate } from "../navigation";
 import {
@@ -12,14 +14,6 @@ import {
 } from "../primitives";
 import type { LifestyleNavigateProps } from "../types";
 
-const CATALOG_COUNTS: [string, number][] = [
-  ["Campsites", 47],
-  ["Trailheads", 31],
-  ["Water sources", 14],
-  ["POI", 38],
-  ["Hazards", 12],
-];
-
 export type DashboardScreenProps = LifestyleNavigateProps & {
   onTripSelect?: (tripId: string) => void;
 };
@@ -27,15 +21,11 @@ export type DashboardScreenProps = LifestyleNavigateProps & {
 export function DashboardScreen({ onNavigate, onTripSelect }: DashboardScreenProps = {}) {
   const goto = useLifestyleNavigate({ onNavigate });
   const D = getVagabondMockData();
-  const trip = D.trip;
-  const M = D.money;
+  const { dashboard: dash, trip, money: M } = D;
   const last = M.lastTrip;
   const lastDelta = ((last.actual - last.planned) / last.planned) * 100;
-
-  const openPlanner = () => {
-    onTripSelect?.(trip.id);
-    goto("planner");
-  };
+  const tripDays = D.waterBudget.tripDays ?? D.days.length;
+  const budgetFoot = `$${(M.tripBudget.total / tripDays).toFixed(0)}/day avg · ${M.tripBudget.categories.length} categories`;
 
   return (
     <div className="page">
@@ -48,7 +38,7 @@ export function DashboardScreen({ onNavigate, onTripSelect }: DashboardScreenPro
         }}
       >
         <section>
-          <span className="micro">Today &middot; Sun, May 17, 2026 &middot; Mojave preserve</span>
+          <span className="micro">{dash.todayLine}</span>
           <h1
             style={{
               margin: "6px 0 0",
@@ -58,7 +48,7 @@ export function DashboardScreen({ onNavigate, onTripSelect }: DashboardScreenPro
               lineHeight: 1.05,
             }}
           >
-            One trip on the horizon.
+            {dash.headline}
           </h1>
         </section>
         <section style={{ display: "flex", gap: 8 }}>
@@ -72,23 +62,47 @@ export function DashboardScreen({ onNavigate, onTripSelect }: DashboardScreenPro
       </header>
 
       <section className="kpi-row" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
-        <KPI label="Days to departure" value="1" unit="d" foot="Tomorrow, 06:30 PDT" />
-        <KPI label="Total drive" value="1,819" unit="mi" foot="27h 48m over 3 days" />
-        <KPI label="Work stops" value="2" unit="" foot="3 meetings scheduled" />
+        {dash.kpis.slice(0, 3).map((kpi) => (
+          <KPI
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            unit={kpi.unit || undefined}
+            foot={kpi.foot}
+          />
+        ))}
         <KPI
           label="Trip budget"
-          value={`$${M.tripBudget.total}`}
-          foot={`$${(M.tripBudget.total / 3).toFixed(0)}/day avg · ${M.tripBudget.categories.length} categories`}
+          value={`$${M.tripBudget.total.toLocaleString()}`}
+          foot={budgetFoot}
         />
-        <KPI label="Schedule feasibility" value="Caution" foot="1 stop with tight buffer" accent />
+        {dash.kpis.slice(3).map((kpi) => (
+          <KPI
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            foot={kpi.foot}
+            accent={kpi.accent}
+          />
+        ))}
       </section>
 
       <div className="dash-grid">
         <section>
-          <SectionHead title="Upcoming" right="1 trip" />
-          <div role="button" tabIndex={0} onClick={openPlanner} onKeyDown={(e) => e.key === "Enter" && openPlanner()}>
-            <TripCard trip={trip} active />
-          </div>
+          <SectionHead title="Upcoming" right={dash.upcoming.sectionRight} />
+          <Link
+            href="/lifestyle/planner"
+            style={{ display: "block", textDecoration: "none", color: "inherit" }}
+            onClick={() => onTripSelect?.(trip.id)}
+          >
+            <TripCard
+              trip={trip}
+              active
+              tripDate={dash.upcoming.tripDate}
+              routeSubtitle={dash.upcoming.routeSubtitle}
+              feasibilityLabel={dash.upcoming.feasibilityLabel}
+            />
+          </Link>
 
           <section style={{ marginTop: 24 }}>
             <SectionHead title="Last trip" right="Reconcile actuals" />
@@ -96,16 +110,22 @@ export function DashboardScreen({ onNavigate, onTripSelect }: DashboardScreenPro
               className="card"
               style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}
             >
-              <ReconcileStat label="Solar produced" predicted="1,488" actual="1,210" unit="Wh/d" delta={-18.7} />
-              <ReconcileStat label="Power drawn" predicted="1,576" actual="1,612" unit="Wh/d" delta={+2.3} />
-              <ReconcileStat label="Water used" predicted="2.4" actual="2.8" unit="gal/d" delta={+16.7} />
-              <ReconcileStat label="Peak sun" predicted="6.2" actual="5.4" unit="h" delta={-12.9} />
+              {dash.lastTripReconcile.map((stat) => (
+                <ReconcileStat
+                  key={stat.label}
+                  label={stat.label}
+                  predicted={stat.predicted}
+                  actual={stat.actual}
+                  unit={stat.unit}
+                  delta={stat.delta}
+                />
+              ))}
               <ReconcileStat
                 label="Money spent"
                 predicted={`$${last.planned.toFixed(0)}`}
                 actual={`$${last.actual.toFixed(2)}`}
                 unit=""
-                delta={+lastDelta}
+                delta={lastDelta}
               />
             </article>
             <footer
@@ -118,8 +138,8 @@ export function DashboardScreen({ onNavigate, onTripSelect }: DashboardScreenPro
               }}
             >
               <span>
-                Kelso Dunes weekend &middot; Apr 26&ndash;28, 2026 &middot;{" "}
-                <span className="mono">9 transactions reconciled</span>
+                {last.name} &middot; {last.window} &middot;{" "}
+                <span className="mono">{M.transactions.parsed} transactions reconciled</span>
               </span>
               <button type="button" className="btn-sm ghost" onClick={() => goto("reconcile")}>
                 Apply as defaults &rarr;
@@ -140,15 +160,15 @@ export function DashboardScreen({ onNavigate, onTripSelect }: DashboardScreenPro
                 maximumFractionDigits: 2,
               })}`}
             />
-            <TripBurnCard money={M} onNavigate={onNavigate} />
+            <TripBurnCard money={M} tripName={trip.name} onNavigate={onNavigate} />
           </section>
 
           <section style={{ marginTop: 18 }}>
-            <SectionHead title="Catalog" right="142 locations" />
+            <SectionHead title="Catalog" right={`${dash.catalogTotal} locations`} />
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {CATALOG_COUNTS.map(([name, count]) => (
+              {dash.catalogCounts.map(({ label, count }) => (
                 <li
-                  key={name}
+                  key={label}
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -157,7 +177,7 @@ export function DashboardScreen({ onNavigate, onTripSelect }: DashboardScreenPro
                     fontSize: 13,
                   }}
                 >
-                  <span>{name}</span>
+                  <span>{label}</span>
                   <span className="mono" style={{ color: "var(--color-text-soft)" }}>
                     {count}
                   </span>

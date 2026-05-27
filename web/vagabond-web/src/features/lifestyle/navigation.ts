@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import type { LifestyleNavigateProps, LifestyleScreen } from "./types";
 
 const SCREEN_PATHS: Record<LifestyleScreen, string> = {
-  dashboard: "/",
+  dashboard: "/lifestyle",
   planner: "/lifestyle/planner",
   "trip-detail": "/lifestyle/trip-detail",
   budget: "/lifestyle/budget",

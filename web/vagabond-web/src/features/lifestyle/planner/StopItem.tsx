@@ -31,7 +31,18 @@ export function StopItem({
             : "·";
 
   return (
-    <div className={`stop-item ${selected ? "selected" : ""}`} onClick={onClick}>
+    <div
+      className={`stop-item ${selected ? "selected" : ""}`}
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+    >
       <div className={`stop-marker ${markerCls}`}>{initial}</div>
       <div className="stop-body">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>

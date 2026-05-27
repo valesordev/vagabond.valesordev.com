@@ -18,8 +18,10 @@ export function PlannerMapDominant({
   setSelected: (id: string) => void;
 }) {
   const D = getVagabondMockData();
+  const { trip, days } = D;
   const [showFallback, setShowFallback] = useState(true);
   const sel = stops.find((s) => s.id === selectedId);
+  const dayCount = days.length;
 
   return (
     <div className="planner map-dom">
@@ -28,13 +30,15 @@ export function PlannerMapDominant({
           <div className="micro" style={{ marginBottom: 4 }}>
             Itinerary
           </div>
-          <h2>3 days, 1,819 mi</h2>
+          <h2>
+            {dayCount} days, {trip.totalMiles.toLocaleString()} mi
+          </h2>
           <div className="rail-meta">
-            <span className="mono">Mojave, CA</span>
+            <span className="mono">{trip.origin}</span>
             <span style={{ color: "var(--color-text-faint)" }}>&rarr;</span>
-            <span className="mono">Atlanta, GA</span>
+            <span className="mono">{trip.destination}</span>
             <span style={{ marginLeft: "auto" }} className="pill neutral">
-              PDT ↔ EDT
+              {trip.homeTz} ↔ EDT
             </span>
           </div>
         </div>

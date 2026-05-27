@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getVagabondMockData, type CatalogLocationType } from "@/lib/mock/vagabond-data";
+import { SimpleTopbar } from "../primitives";
 import type { LifestyleNavigateProps } from "../types";
 import { CatalogMap } from "./CatalogMap";
 import { Signal, TYPE_META, TypeChip } from "./catalog-primitives";
 
 const JURISDICTIONS = ["BLM", "NPS", "USFS", "StateParks", "Private", "Unknown"] as const;
+const CONDITIONS = ["good", "watch", "avoid", "untested"] as const;
 
 export type CatalogScreenProps = LifestyleNavigateProps & {
   onLocSelect?: (id: string) => void;
@@ -19,6 +21,7 @@ export function CatalogScreen({ onLocSelect }: CatalogScreenProps = {}) {
   const [query, setQuery] = useState("");
   const [types, setTypes] = useState<Set<CatalogLocationType>>(() => new Set(Object.keys(TYPE_META) as CatalogLocationType[]));
   const [jurisdictions, setJurisdictions] = useState<Set<string>>(() => new Set(JURISDICTIONS));
+  const [conditions, setConditions] = useState<Set<string>>(() => new Set(CONDITIONS));
   const [selected, setSelected] = useState(D.catalog[0].id);
 
   const toggleSet = <T extends string>(s: Set<T>, v: T, setter: (next: Set<T>) => void) => {
@@ -33,11 +36,12 @@ export function CatalogScreen({ onLocSelect }: CatalogScreenProps = {}) {
       (l) =>
         types.has(l.type) &&
         jurisdictions.has(l.jurisdiction) &&
+        conditions.has(l.conditions) &&
         (query === "" ||
           l.name.toLowerCase().includes(query.toLowerCase()) ||
           l.landUnit.toLowerCase().includes(query.toLowerCase())),
     );
-  }, [query, types, jurisdictions, D.catalog]);
+  }, [query, types, jurisdictions, conditions, D.catalog]);
 
   const counts = useMemo(() => {
     const c: Partial<Record<CatalogLocationType, number>> = {};
@@ -62,26 +66,18 @@ export function CatalogScreen({ onLocSelect }: CatalogScreenProps = {}) {
 
   return (
     <>
-      <div className="topbar">
-        <div className="topbar-left">
-          <div>
-            <div className="topbar-crumb">Catalog &middot; {D.catalog.length} locations</div>
-            <div className="topbar-title">Locations</div>
-          </div>
-        </div>
-        <div className="topbar-right">
-          <span className="pill neutral">{filtered.length} shown</span>
-          <button type="button" className="btn-sm ghost">
-            Import GPX
-          </button>
-          <button type="button" className="btn-sm ghost">
-            Import KML
-          </button>
-          <button type="button" className="btn-sm">
-            + New location
-          </button>
-        </div>
-      </div>
+      <SimpleTopbar crumb={`Catalog · ${D.catalog.length} locations`} title="Locations">
+        <span className="pill neutral">{filtered.length} shown</span>
+        <button type="button" className="btn-sm ghost">
+          Import GPX
+        </button>
+        <button type="button" className="btn-sm ghost">
+          Import KML
+        </button>
+        <button type="button" className="btn-sm">
+          + New location
+        </button>
+      </SimpleTopbar>
 
       <div className="catalog">
         <aside className="catalog-filters">
@@ -132,22 +128,24 @@ export function CatalogScreen({ onLocSelect }: CatalogScreenProps = {}) {
 
           <h3 style={{ marginTop: 22 }}>Conditions</h3>
           <div className="chip-group">
-            <button type="button" className="chip on">
-              <span className="cond-dot cond-good" />
-              Good
-            </button>
-            <button type="button" className="chip on">
-              <span className="cond-dot cond-watch" />
-              Watch
-            </button>
-            <button type="button" className="chip on">
-              <span className="cond-dot cond-avoid" />
-              Avoid
-            </button>
-            <button type="button" className="chip on">
-              <span className="cond-dot cond-untested" />
-              Untested
-            </button>
+            {(
+              [
+                ["good", "Good"],
+                ["watch", "Watch"],
+                ["avoid", "Avoid"],
+                ["untested", "Untested"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={`chip ${conditions.has(key) ? "on" : ""}`}
+                onClick={() => toggleSet(conditions, key, setConditions)}
+              >
+                <span className={`cond-dot cond-${key}`} />
+                {label}
+              </button>
+            ))}
           </div>
 
           <div

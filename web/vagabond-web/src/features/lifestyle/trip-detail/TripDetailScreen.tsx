@@ -79,6 +79,9 @@ export function TripDetailScreen({ onNavigate }: LifestyleNavigateProps = {}) {
   const D = getVagabondMockData();
   const trip = D.trip;
   const M = D.money;
+  const tripDays = D.days.length;
+  const mealCount = D.foodPlan.reduce((n, d) => n + d.meals.length, 0);
+  const preSpent = M.tripBudget.preTripSpend.reduce((a, t) => a + t.amount, 0);
 
   const timeline: TimelineRowData[] = [];
   D.stops.forEach((s) => {
@@ -171,7 +174,7 @@ export function TripDetailScreen({ onNavigate }: LifestyleNavigateProps = {}) {
 
       <div className="detail-grid">
         <section>
-          <SectionHead title="Timeline" right="3 days" />
+          <SectionHead title="Timeline" right={`${tripDays} days`} />
           <div className="timeline">
             {timeline.map((row, i) => (
               <TimelineRow key={i} row={row} />
@@ -194,7 +197,7 @@ export function TripDetailScreen({ onNavigate }: LifestyleNavigateProps = {}) {
                 gap: 8,
               }}
             >
-              <FactRow k="Trip ID" v={<span className="mono">ga-pickup-26</span>} />
+              <FactRow k="Trip ID" v={<span className="mono">{trip.id}</span>} />
               <FactRow k="Window" v={trip.window} />
               <FactRow k="Origin" v={trip.origin} />
               <FactRow k="Destination" v={trip.destination} />
@@ -231,19 +234,33 @@ export function TripDetailScreen({ onNavigate }: LifestyleNavigateProps = {}) {
               }}
             >
               <FactRow k="Money planned" v={<span className="mono">${M.tripBudget.total} USD</span>} />
+              <FactRow k="Pre-trip spend" v={<span className="mono">${preSpent.toFixed(2)}</span>} />
               <FactRow
-                k="Pre-trip spend"
+                k="Power reserve"
                 v={
                   <span className="mono">
-                    ${M.tripBudget.preTripSpend.reduce((a, t) => a + t.amount, 0).toFixed(2)}
+                    {D.battery.reserveWh.toLocaleString()} / {D.battery.capacityWh.toLocaleString()} Wh
                   </span>
                 }
               />
-              <FactRow k="Power reserve" v={<span className="mono">1,844 / 3,072 Wh</span>} />
-              <FactRow k="Water end" v={<span className="mono">10.8 / 18 gal</span>} />
-              <FactRow k="Meals planned" v={<span className="mono">9 / 9</span>} />
+              <FactRow
+                k="Water end"
+                v={
+                  <span className="mono">
+                    {D.waterBudget.endReserve} / {D.waterBudget.carryGallons} gal
+                  </span>
+                }
+              />
+              <FactRow
+                k="Meals planned"
+                v={
+                  <span className="mono">
+                    {mealCount} / {mealCount}
+                  </span>
+                }
+              />
             </ul>
-            <button type="button" className="btn-sm ghost" style={{ marginTop: 12, width: "100%" }}>
+            <button type="button" className="btn-sm ghost" style={{ marginTop: 12, width: "100%" }} onClick={() => goto("budget")}>
               Edit budgets
             </button>
           </div>

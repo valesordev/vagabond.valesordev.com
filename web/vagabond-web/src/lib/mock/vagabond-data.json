@@ -14,6 +14,80 @@
     "status": "Confirmed",
     "crossesTz": "+3h (PDT → EDT)"
   },
+  "dashboard": {
+    "todayLine": "Today · Sun, May 17, 2026 · Mojave preserve",
+    "headline": "One trip on the horizon.",
+    "upcoming": {
+      "sectionRight": "1 trip",
+      "tripDate": { "month": "May", "day": 18, "year": 2026 },
+      "routeSubtitle": "Mojave to Atlanta",
+      "feasibilityLabel": "Tight buffer at Weatherford"
+    },
+    "kpis": [
+      {
+        "label": "Days to departure",
+        "value": "1",
+        "unit": "d",
+        "foot": "Tomorrow, 06:30 PDT"
+      },
+      {
+        "label": "Total drive",
+        "value": "1,819",
+        "unit": "mi",
+        "foot": "27h 48m over 3 days"
+      },
+      {
+        "label": "Work stops",
+        "value": "2",
+        "unit": "",
+        "foot": "3 meetings scheduled"
+      },
+      {
+        "label": "Schedule feasibility",
+        "value": "Caution",
+        "foot": "1 stop with tight buffer",
+        "accent": true
+      }
+    ],
+    "lastTripReconcile": [
+      {
+        "label": "Solar produced",
+        "predicted": "1,488",
+        "actual": "1,210",
+        "unit": "Wh/d",
+        "delta": -18.7
+      },
+      {
+        "label": "Power drawn",
+        "predicted": "1,576",
+        "actual": "1,612",
+        "unit": "Wh/d",
+        "delta": 2.3
+      },
+      {
+        "label": "Water used",
+        "predicted": "2.4",
+        "actual": "2.8",
+        "unit": "gal/d",
+        "delta": 16.7
+      },
+      {
+        "label": "Peak sun",
+        "predicted": "6.2",
+        "actual": "5.4",
+        "unit": "h",
+        "delta": -12.9
+      }
+    ],
+    "catalogCounts": [
+      { "label": "Campsites", "count": 47 },
+      { "label": "Trailheads", "count": 31 },
+      { "label": "Water sources", "count": 14 },
+      { "label": "POI", "count": 38 },
+      { "label": "Hazards", "count": 12 }
+    ],
+    "catalogTotal": 142
+  },
   "stops": [
     {
       "id": "origin",

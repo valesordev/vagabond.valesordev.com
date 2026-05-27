@@ -3,25 +3,26 @@
 import { getVagabondMockData } from "@/lib/mock/vagabond-data";
 import { CategoryStack } from "../primitives";
 
-export function MoneyBudgetCard() {
+export function MoneyBudgetCard({ tripDays }: { tripDays: number }) {
   const D = getVagabondMockData();
   const M = D.money;
   const tb = M.tripBudget;
   const last = M.lastTrip;
   const preSpent = tb.preTripSpend.reduce((a, t) => a + t.amount, 0);
+  const days = tripDays || tb.perDay.length;
   return (
     <div className="budget-card">
       <div className="micro" style={{ marginBottom: 4 }}>
         Money
       </div>
       <h3>
-        ${tb.total}{" "}
+        ${tb.total.toLocaleString()}{" "}
         <span className="mono" style={{ fontSize: 14, color: "var(--color-text-soft)" }}>
-          planned over 3 days
+          planned over {days} days
         </span>
       </h3>
       <div className="budget-sub">
-        ${(tb.total / 3).toFixed(0)}/day avg &middot; {tb.categories.filter((c) => c.planned > 0).length} active
+        ${(tb.total / days).toFixed(0)}/day avg &middot; {tb.categories.filter((c) => c.planned > 0).length} active
         categories
       </div>
 

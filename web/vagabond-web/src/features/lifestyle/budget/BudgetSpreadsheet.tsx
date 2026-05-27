@@ -2,7 +2,7 @@
 
 import { getVagabondMockData, type PowerLoad } from "@/lib/mock/vagabond-data";
 import { ParamRow } from "../primitives";
-import type { BudgetTotals } from "./BudgetVisual";
+import type { BudgetEditorProps } from "./BudgetScreen";
 
 export function BudgetSpreadsheet({
   totals,
@@ -12,16 +12,10 @@ export function BudgetSpreadsheet({
   setPsh,
   waterRate,
   setWaterRate,
-}: {
-  totals: BudgetTotals;
-  loads: PowerLoad[];
-  updateLoad: (i: number, field: "watts" | "hours", value: string) => void;
-  psh: number;
-  setPsh: (v: number) => void;
-  waterRate: number;
-  setWaterRate: (v: number) => void;
-}) {
+  tripDays,
+}: BudgetEditorProps) {
   const D = getVagabondMockData();
+  const resupply = D.waterBudget.resupply[0];
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
@@ -138,7 +132,14 @@ export function BudgetSpreadsheet({
           <div style={{ padding: 18 }}>
             <table style={{ width: "100%", fontSize: 13 }}>
               <tbody>
-                <ParamRow k="Solar panels" v="2 × 200W" />
+                <ParamRow
+                  k="Solar panels"
+                  v={
+                    <span className="mono">
+                      {D.solar.panels} × {D.solar.peakWatts}W
+                    </span>
+                  }
+                />
                 <ParamRow
                   k="Peak sun hours/day"
                   v={
@@ -192,11 +193,22 @@ export function BudgetSpreadsheet({
                     />
                   }
                 />
-                <ParamRow k="Trip days" v={<span className="mono">3</span>} />
-                <ParamRow k="Resupply" v={<span className="mono">Day 2 · Van Horn</span>} />
+                <ParamRow k="Trip days" v={<span className="mono">{tripDays}</span>} />
+                <ParamRow
+                  k="Resupply"
+                  v={
+                    <span className="mono">
+                      Day {resupply?.day ?? 2} · {resupply?.location ?? "Van Horn"}
+                    </span>
+                  }
+                />
                 <ParamRow
                   k="End reserve"
-                  v={<span className="mono">{(D.waterBudget.carryGallons - waterRate * 3).toFixed(1)} gal</span>}
+                  v={
+                    <span className="mono">
+                      {(D.waterBudget.carryGallons - waterRate * tripDays).toFixed(1)} gal
+                    </span>
+                  }
                 />
               </tbody>
             </table>
@@ -249,7 +261,7 @@ export function BudgetSpreadsheet({
             <h3 style={{ margin: "4px 0 0", fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 500 }}>
               ${D.money.tripBudget.total} planned &middot;{" "}
               <span className="mono" style={{ fontSize: 13, color: "var(--color-text-soft)" }}>
-                USD &middot; 3 days
+                USD &middot; {tripDays} days
               </span>
             </h3>
           </div>
@@ -286,7 +298,7 @@ export function BudgetSpreadsheet({
                   <td>
                     <input className="num-input" type="number" defaultValue={c.planned} />
                   </td>
-                  <td className="mono">${(c.planned / 3).toFixed(2)}</td>
+                  <td className="mono">${(c.planned / tripDays).toFixed(2)}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div
@@ -317,7 +329,7 @@ export function BudgetSpreadsheet({
                 Total
               </td>
               <td className="mono">${D.money.tripBudget.total}</td>
-              <td className="mono">${(D.money.tripBudget.total / 3).toFixed(2)}</td>
+              <td className="mono">${(D.money.tripBudget.total / tripDays).toFixed(2)}</td>
               <td></td>
               <td className="mono">${D.money.lastTrip.actual.toFixed(2)}</td>
               <td></td>

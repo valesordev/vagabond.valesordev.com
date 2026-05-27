@@ -1,36 +1,26 @@
 "use client";
 
-import { getVagabondMockData, type PowerLoad } from "@/lib/mock/vagabond-data";
+import { getVagabondMockData } from "@/lib/mock/vagabond-data";
+import type { BudgetEditorProps } from "./BudgetScreen";
 import { MoneyBudgetCard } from "./MoneyBudgetCard";
 import { WaterTankSvg } from "./WaterTankSvg";
-
-export type BudgetTotals = {
-  consumed: number;
-  produced: number;
-  net: number;
-  reserve: number;
-};
 
 export function BudgetVisual({
   totals,
   loads,
-  updateLoad,
   psh,
   setPsh,
   waterRate,
   setWaterRate,
-}: {
-  totals: BudgetTotals;
-  loads: PowerLoad[];
-  updateLoad: (i: number, field: "watts" | "hours", value: string) => void;
-  psh: number;
-  setPsh: (v: number) => void;
-  waterRate: number;
-  setWaterRate: (v: number) => void;
-}) {
+  tripDays,
+}: BudgetEditorProps) {
   const D = getVagabondMockData();
+  const waterUsed = waterRate * tripDays;
+  const resupply = D.waterBudget.resupply[0];
   const consumedPct = Math.min(100, (totals.consumed / totals.produced) * 100);
   const reservePct = Math.max(0, Math.min(100, (totals.reserve / D.battery.capacityWh) * 100));
+  const mealCount = D.foodPlan.reduce((n, d) => n + d.meals.length, 0);
+  const avgCal = Math.round(D.foodPlan.reduce((n, d) => n + d.cal, 0) / D.foodPlan.length);
 
   return (
     <div className="budget-grid">
@@ -63,7 +53,7 @@ export function BudgetVisual({
 
         <div style={{ marginTop: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-            <span>Battery reserve after 3 days</span>
+            <span>Battery reserve after {tripDays} days</span>
             <span
               className="mono"
               style={{ color: reservePct < 25 ? "var(--err)" : "var(--color-text-soft)" }}
@@ -82,7 +72,9 @@ export function BudgetVisual({
         <div className="budget-readout">
           <div className="ro-row">
             <span>Solar panels</span>
-            <b>2 × 200W</b>
+            <b>
+              {D.solar.panels} × {D.solar.peakWatts}W
+            </b>
           </div>
           <div className="ro-row">
             <span>Battery</span>
@@ -140,17 +132,18 @@ export function BudgetVisual({
           Water
         </div>
         <h3>
-          {(waterRate * 3).toFixed(1)}{" "}
+          {waterUsed.toFixed(1)}{" "}
           <span className="mono" style={{ fontSize: 14, color: "var(--color-text-soft)" }}>
-            gal over 3 days
+            gal over {tripDays} days
           </span>
         </h3>
         <div className="budget-sub">
-          Carrying {D.waterBudget.carryGallons} gal &middot; resupply at Van Horn on day 2
+          Carrying {D.waterBudget.carryGallons} gal &middot; resupply at {resupply?.location ?? "Van Horn"} on day{" "}
+          {resupply?.day ?? 2}
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <WaterTankSvg used={waterRate * 3} total={D.waterBudget.carryGallons} />
+          <WaterTankSvg used={waterUsed} total={D.waterBudget.carryGallons} />
         </div>
 
         <div className="budget-readout" style={{ marginTop: 12 }}>
@@ -172,11 +165,11 @@ export function BudgetVisual({
           </div>
           <div className="ro-row">
             <span>End reserve</span>
-            <b>{(D.waterBudget.carryGallons - waterRate * 3).toFixed(1)} gal</b>
+            <b>{(D.waterBudget.carryGallons - waterUsed).toFixed(1)} gal</b>
           </div>
           <div className="ro-row">
             <span>Resupply</span>
-            <b>Day 2</b>
+            <b>Day {resupply?.day ?? 2}</b>
           </div>
         </div>
 
@@ -211,12 +204,14 @@ export function BudgetVisual({
           Food
         </div>
         <h3>
-          9{" "}
+          {mealCount}{" "}
           <span className="mono" style={{ fontSize: 14, color: "var(--color-text-soft)" }}>
             meals planned
           </span>
         </h3>
-        <div className="budget-sub">3 meals/day &middot; avg 2,433 cal/day</div>
+        <div className="budget-sub">
+          {D.foodPlan[0]?.meals.length ?? 3} meals/day &middot; avg {avgCal.toLocaleString()} cal/day
+        </div>
 
         {D.foodPlan.map((d) => (
           <div key={d.day} style={{ marginTop: 14 }}>
@@ -248,7 +243,7 @@ export function BudgetVisual({
         ))}
       </div>
 
-      <MoneyBudgetCard />
+      <MoneyBudgetCard tripDays={tripDays} />
     </div>
   );
 }

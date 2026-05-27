@@ -17,18 +17,18 @@ export function KPI({
   label: string;
   value: ReactNode;
   unit?: string;
-  foot: ReactNode;
+  foot?: ReactNode;
   accent?: boolean;
 }) {
   return (
-    <article className={`kpi ${accent ? "accent" : ""}`}>
-      <span className="kpi-label">{label}</span>
-      <span className="kpi-value">
+    <div className={`kpi ${accent ? "accent" : ""}`}>
+      <div className="kpi-label">{label}</div>
+      <div className="kpi-value">
         {value}
         {unit ? <span className="unit">{unit}</span> : null}
-      </span>
-      <span className="kpi-foot">{foot}</span>
-    </article>
+      </div>
+      {foot != null ? <div className="kpi-foot">{foot}</div> : null}
+    </div>
   );
 }
 
@@ -38,6 +38,51 @@ export function SectionHead({ title, right }: { title: string; right?: ReactNode
       <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 500 }}>{title}</h2>
       {right ? <span className="micro">{right}</span> : null}
     </header>
+  );
+}
+
+export function SimpleTopbar({
+  crumb,
+  title,
+  children,
+}: {
+  crumb: ReactNode;
+  title: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="topbar">
+      <div className="topbar-left">
+        <div>
+          <div className="topbar-crumb">{crumb}</div>
+          <div className="topbar-title">{title}</div>
+        </div>
+      </div>
+      {children ? <div className="topbar-right">{children}</div> : null}
+    </div>
+  );
+}
+
+const STATUS_COLOR = {
+  ok: "var(--ok)",
+  warn: "var(--warn)",
+  err: "var(--err)",
+  off: "var(--color-text-faint)",
+} as const;
+
+export function StatusDot({ status }: { status: "ok" | "warn" | "err" | "off" }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: "50%",
+        background: STATUS_COLOR[status],
+        display: "inline-block",
+        flexShrink: 0,
+      }}
+    />
   );
 }
 
@@ -71,12 +116,17 @@ export function FactRow({ k, v }: { k: ReactNode; v: ReactNode }) {
   );
 }
 
+function statusToDot(status: string): "ok" | "warn" | "err" | "off" {
+  if (status === "ok" || status === "warn" || status === "err" || status === "off") {
+    return status;
+  }
+  return "off";
+}
+
 export function StatusRow({ label, status, detail }: { label: string; status: string; detail: ReactNode }) {
-  const color =
-    status === "ok" ? "var(--ok)" : status === "warn" ? "var(--warn)" : "var(--color-text-faint)";
   return (
     <li style={{ display: "grid", gridTemplateColumns: "8px 1fr auto", gap: 10, alignItems: "center" }}>
-      <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+      <StatusDot status={statusToDot(status)} />
       <span>{label}</span>
       <span className="mono" style={{ fontSize: 11, color: "var(--color-text-soft)" }}>{detail}</span>
     </li>
@@ -112,26 +162,51 @@ export function ReconcileStat({
   );
 }
 
-export function TripCard({ trip, active }: { trip: TripSummary; active?: boolean }) {
+export function TripCard({
+  trip,
+  active,
+  tripDate,
+  routeSubtitle,
+  feasibilityLabel,
+}: {
+  trip: TripSummary;
+  active?: boolean;
+  tripDate?: { month: string; day: number; year: number };
+  routeSubtitle?: string;
+  feasibilityLabel?: string;
+}) {
+  const date = tripDate ?? { month: "May", day: 18, year: 2026 };
+  const subtitle = routeSubtitle ?? "Mojave to Atlanta";
+  const warning = feasibilityLabel ?? "Tight buffer at Weatherford";
+
   return (
     <article className={`trip-card ${active ? "active" : ""}`}>
       <section className="trip-date">
-        <span className="month">May</span>
-        <span className="day">18</span>
-        <span className="year">2026</span>
+        <span className="month">{date.month}</span>
+        <span className="day">{date.day}</span>
+        <span className="year">{date.year}</span>
       </section>
       <section className="trip-body">
-        <h3>{trip.name} &mdash; Mojave to Atlanta</h3>
+        <h3>
+          {trip.name} &mdash; {subtitle}
+        </h3>
         <span className="trip-meta">
-          <span><b>{trip.totalMiles}</b> mi</span>
+          <span>
+            <b>{trip.totalMiles.toLocaleString()}</b> mi
+          </span>
           <span>{trip.driveHours}h drive</span>
           <span>{trip.campNights} camp nights</span>
-          <span>{trip.workStops} work stops &middot; {trip.meetings} meetings</span>
+          <span>
+            {trip.workStops} work stops &middot; {trip.meetings} meetings
+          </span>
           <span>{trip.crossesTz}</span>
         </span>
       </section>
       <section style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-        <span className="pill warn"><span className="dot" />Tight buffer at Weatherford</span>
+        <span className="pill warn">
+          <span className="dot" />
+          {warning}
+        </span>
         <span className="micro">Open planner &rarr;</span>
       </section>
     </article>
@@ -199,8 +274,10 @@ export function CategoryStack({
 
 export function TripBurnCard({
   money,
+  tripName,
 }: {
   money: MoneyData;
+  tripName: string;
 } & LifestyleNavigateProps) {
   const tb = money.tripBudget;
   const pre = tb.preTripSpend.reduce((a, t) => a + t.amount, 0);
@@ -209,7 +286,9 @@ export function TripBurnCard({
     <article className="card" style={{ padding: 16 }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <section>
-          <span className="micro" style={{ marginBottom: 4, display: "block" }}>Trip budget &middot; GA Pickup</span>
+          <span className="micro" style={{ marginBottom: 4, display: "block" }}>
+            Trip budget &middot; {tripName}
+          </span>
           <span style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 500, lineHeight: 1, display: "block" }}>
             ${tb.total.toLocaleString()}
             <span className="mono" style={{ fontSize: 11, color: "var(--color-text-soft)", marginLeft: 6 }}>USD</span>

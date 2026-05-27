@@ -138,7 +138,39 @@ export type FieldLog = {
 
 export type ProjectPoint = { x: number; y: number };
 
+export type DashboardKpi = {
+  label: string;
+  value: string;
+  unit?: string;
+  foot: string;
+  accent?: boolean;
+};
+
+export type DashboardReconcileMetric = {
+  label: string;
+  predicted: string;
+  actual: string;
+  unit: string;
+  delta: number;
+};
+
+export type DashboardData = {
+  todayLine: string;
+  headline: string;
+  upcoming: {
+    sectionRight: string;
+    tripDate: { month: string; day: number; year: number };
+    routeSubtitle: string;
+    feasibilityLabel: string;
+  };
+  kpis: DashboardKpi[];
+  lastTripReconcile: DashboardReconcileMetric[];
+  catalogCounts: { label: string; count: number }[];
+  catalogTotal: number;
+};
+
 export type VagabondMockData = Omit<typeof rawData, "stops" | "catalog" | "routeViaPoints"> & {
+  dashboard: DashboardData;
   stops: Stop[];
   catalog: CatalogLocation[];
   routeViaPoints: [number, number][];

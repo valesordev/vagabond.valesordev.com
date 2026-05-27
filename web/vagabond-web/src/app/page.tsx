@@ -1,5 +1,5 @@
-import { DashboardScreen } from "@/features/lifestyle/dashboard/DashboardScreen";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return <DashboardScreen />;
+  redirect("/lifestyle");
 }

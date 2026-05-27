@@ -21,7 +21,7 @@ export function PlannerBudgetCard({ money }: { money: MoneyData }) {
         <div className="micro">Monetary budget &middot; planned</div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
           <span className="mono" style={{ fontSize: 11, color: "var(--color-text-soft)" }}>
-            {tb.categories.filter((c) => c.planned > 0).length} categories &middot; 3 days
+            {tb.categories.filter((c) => c.planned > 0).length} categories &middot; {tb.perDay.length} days
           </span>
           <span style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500 }}>${tb.total}</span>
         </div>

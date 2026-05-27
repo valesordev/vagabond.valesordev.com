@@ -42,7 +42,7 @@ export function ItineraryTable({
         </tr>
       </thead>
       <tbody>
-        {rows.map((r, i) => {
+        {rows.map((r) => {
           if (r.type === "day") {
             return (
               <tr key={`d-${r.day.num}`} className="day-row">
