@@ -12,6 +12,7 @@ Cargo.lock          # kept for binaries; remove this line if you want to commit 
 node_modules/
 .next/
 out/
+*.tsbuildinfo
 web/vagabond-web/.env*
 
 # ── Docker ────────────────────────────────────────────────────────────────────
