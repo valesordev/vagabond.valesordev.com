@@ -2,14 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getVagabondMockData, type Stop } from "@/lib/mock/vagabond-data";
+import { buildTripContext } from "./build-trip-context";
+import { streamAssistantReply } from "./stream-assistant";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-const STUB_REPLY = "[AI assistant not yet configured — see Story 13 for wiring]";
-
-async function completeAssistant(_prompt: string): Promise<string> {
-  return STUB_REPLY;
-}
+const SUGGESTIONS = [
+  "Why is Weatherford tight?",
+  "Propose a fallback for day 2",
+  "Re-time the customer demo to give 30m slack",
+  "Where can I add a sunset stop without breaking the schedule?",
+] as const;
 
 export function PlannerAssistant({
   stops,
@@ -30,69 +33,42 @@ export function PlannerAssistant({
     if (scrollerRef.current) scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
   }, [messages, busy]);
 
-  const tripContext = useMemo(() => {
-    const t = D.trip;
-    const lines: string[] = [];
-    lines.push(`Trip: ${t.name} (${t.id}) — ${t.window}`);
-    lines.push(
-      `Route: ${t.totalMiles} mi, ${t.driveHours}h drive over ${t.campNights + 1} days; crosses ${t.crossesTz}.`,
-    );
-    lines.push("");
-    lines.push("Stops:");
-    stops.forEach((s) => {
-      const meet = s.meetings
-        ? ` — meetings: ${s.meetings.map((m) => `${m.title} ${m.homeTime} (${m.duration}m, ${m.connectivity})`).join("; ")}`
-        : "";
-      const buf =
-        s.preBufferMargin != null
-          ? ` — slack pre +${s.preBufferMargin}m / post +${s.postBufferMargin}m (${s.feasible})`
-          : "";
-      const fb = s.fallback ? ` — fallback: ${s.fallback.name} (${s.fallback.note})` : "";
-      lines.push(
-        `- [${s.kind}] ${s.name} @ ${s.loc}${s.arrival ? ` — arr ${s.arrival}, dep ${s.departure || ""}` : ""}${meet}${buf}${fb}`,
-      );
-    });
-    lines.push("");
-    lines.push(`Currently selected stop: ${selectedId}`);
-    lines.push("");
-    const tb = D.money.tripBudget;
-    lines.push(`Monetary budget: $${tb.total} planned over 3 days (currency: ${D.money.currency}).`);
-    lines.push(
-      `By category: ${tb.categories
-        .filter((c) => c.planned > 0)
-        .map((c) => `${c.label} $${c.planned}`)
-        .join(", ")}.`,
-    );
-    lines.push(
-      `Pre-trip spend already on card: $${tb.preTripSpend.reduce((a, tx) => a + tx.amount, 0).toFixed(2)} (${tb.preTripSpend.length} charges).`,
-    );
-    return lines.join("\n");
-  }, [stops, selectedId, D]);
+  const tripContext = useMemo(
+    () => buildTripContext(D, stops, selectedId),
+    [D, stops, selectedId],
+  );
 
   const send = async (text?: string) => {
     const content = (text ?? draft).trim();
     if (!content || busy) return;
     setDraft("");
     setError(null);
-    const next: ChatMessage[] = [...messages, { role: "user", content }];
-    setMessages(next);
+
+    const conversation: ChatMessage[] = [...messages, { role: "user", content }];
+    setMessages([...conversation, { role: "assistant", content: "" }]);
     setBusy(true);
+
     try {
-      const reply = await completeAssistant(tripContext);
-      setMessages((cur) => [...cur, { role: "assistant", content: reply.trim() }]);
+      await streamAssistantReply(conversation, tripContext, (chunk) => {
+        setMessages((cur) => {
+          if (cur.length === 0) return cur;
+          const last = cur[cur.length - 1];
+          if (last.role !== "assistant") return cur;
+          const next = cur.slice();
+          next[next.length - 1] = { role: "assistant", content: last.content + chunk };
+          return next;
+        });
+      });
     } catch (e) {
-      setError(String(e instanceof Error ? e.message : e));
+      setMessages(conversation);
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   };
 
-  const suggestions = [
-    "Why is Weatherford tight?",
-    "Propose a fallback for day 2",
-    "Re-time the customer demo to give 30m slack",
-    "Where can I add a sunset stop without breaking the schedule?",
-  ];
+  const showThinking =
+    busy && (messages.length === 0 || messages[messages.length - 1]?.role !== "assistant");
 
   return (
     <div className="assistant">
@@ -135,7 +111,7 @@ export function PlannerAssistant({
               context on every turn.
             </p>
             <div className="assistant-chips">
-              {suggestions.map((s) => (
+              {SUGGESTIONS.map((s) => (
                 <button key={s} type="button" className="assistant-chip" onClick={() => send(s)} disabled={busy}>
                   {s}
                 </button>
@@ -151,7 +127,7 @@ export function PlannerAssistant({
           </div>
         ))}
 
-        {busy && (
+        {showThinking && (
           <div className="msg msg-assistant">
             <div className="msg-byline">Assistant</div>
             <div className="msg-body thinking">
