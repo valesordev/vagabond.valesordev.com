@@ -15,7 +15,8 @@ backcountry travelers.
 - Offline map via PMTiles (OSM base layer, no API keys required)
 - Single-command Docker Compose deploy
 
-**Roadmap**: live telemetry (v0.2), community campsite database (v0.3)
+**Build from:** [v0.1 user stories](docs/user-stories/v0.1/) (“Better Markdown” switch point).  
+**Architecture:** [docs/](docs/) (ADR index, stories, runbooks). Later releases (v0.2+) remain in the parent planning story map until promoted into `docs/user-stories/`.
 
 ---
 
@@ -62,7 +63,7 @@ docker compose up -d
 
 ## Architecture
 
-See [`docs/adr/`](docs/adr/) for Architecture Decision Records.
+See [`docs/`](docs/) for the documentation hub, [`docs/adr/`](docs/adr/) for Architecture Decision Records, and [`docs/user-stories/v0.1/`](docs/user-stories/v0.1/) for buildable MVP stories.
 
 ```
 vagabond/

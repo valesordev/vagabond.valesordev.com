@@ -1,9 +1,11 @@
-# ADR-013: Personal Field Navigation Stack Diverges from Project Recommendation
+# ADR-016: Personal Field Navigation Stack Diverges from Project Recommendation
 
 **Status**: Accepted
 **Date**: 2026-05-21
 **Deciders**: Brian
 **Supersedes (partial)**: ADR-005 (Open Geo Standards Throughout) — only the field navigation recommendation row; all other open-standards decisions in ADR-005 remain in force.
+
+> **Renumber note:** Originally filed as a duplicate ADR-013. Kept as ADR-016 so trip-event domain retains ADR-013.
 
 ## Context
 

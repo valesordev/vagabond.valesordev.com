@@ -217,7 +217,7 @@ export function NavSettings() {
     <>
       <SectionHead2
         title="Field navigation"
-        sub="Per ADR-013, the recommended stack diverges between project and personal use."
+        sub="Per ADR-016, the recommended stack diverges between project and personal use."
       />
       <FieldRow label="Primary field nav" hint="Used for GPX export targets and recommended in-trip handoff.">
         <select defaultValue="apple-gaia">
