@@ -33,7 +33,8 @@ services:
     environment:
       POSTGRES_DB:       ${POSTGRES_DB:-vagabond}
       POSTGRES_USER:     ${POSTGRES_USER:-vagabond}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      # Override in production; default matches .env.example / Playwright CI.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -53,7 +54,7 @@ services:
       PGPORT: 5432
       PGDATABASE: ${POSTGRES_DB:-vagabond}
       PGUSER: ${POSTGRES_USER:-vagabond}
-      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-changeme}
     command: >
       sh -ec "
       until psql -v ON_ERROR_STOP=1 -tAc \"SELECT to_regclass('public.users') IS NOT NULL\" | grep -q t; do
@@ -81,7 +82,7 @@ services:
     container_name: vagabond-martin
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vagabond}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-vagabond}
     ports:
       - "${MARTIN_PORT:-3002}:3000"
     depends_on:
@@ -96,9 +97,10 @@ services:
     container_name: vagabond-server
     restart: unless-stopped
     environment:
-      DATABASE_URL:    postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vagabond}
+      DATABASE_URL:    postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-vagabond}
       LISTEN_ADDR:     0.0.0.0:3001
-      JWT_SECRET:      ${JWT_SECRET:?JWT_SECRET is required}
+      # Override in production; default lets `compose up postgres` interpolate in CI.
+      JWT_SECRET:      ${JWT_SECRET:-change-me-to-a-long-random-secret}
       # Core local default: header auth. Set false when using --profile auth + Keycloak JWTs.
       VAGABOND_DEV_AUTH: ${VAGABOND_DEV_AUTH:-true}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost/auth/realms/vagabond}
@@ -162,7 +164,7 @@ services:
       KC_DB:                   postgres
       KC_DB_URL:               jdbc:postgresql://postgres:5432/${POSTGRES_DB:-vagabond}
       KC_DB_USERNAME:          ${POSTGRES_USER:-vagabond}
-      KC_DB_PASSWORD:          ${POSTGRES_PASSWORD}
+      KC_DB_PASSWORD:          ${POSTGRES_PASSWORD:-changeme}
       KC_HOSTNAME_STRICT:      false
       KC_HOSTNAME:             localhost
       KC_PROXY_HEADERS:        xforwarded
@@ -212,7 +214,7 @@ services:
     container_name: vagabond-postgres-exporter
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vagabond}?sslmode=disable
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-vagabond}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-vagabond}?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
