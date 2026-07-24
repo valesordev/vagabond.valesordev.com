@@ -28,7 +28,7 @@ tracing               = { workspace = true }
 tracing-subscriber    = { workspace = true }
 dotenvy       = { workspace = true }
 axum-prometheus = { workspace = true }
-jsonwebtoken  = "9"
+jsonwebtoken  = "10"
 reqwest       = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 gpx           = "0.10"
 
@@ -40,4 +40,4 @@ sqlx           = { workspace = true }
 tokio          = { workspace = true }
 tower          = { workspace = true, features = ["util"] }
 uuid           = { workspace = true }
-jsonwebtoken   = "9"
+jsonwebtoken   = "10"
