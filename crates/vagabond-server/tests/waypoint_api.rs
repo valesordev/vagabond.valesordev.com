@@ -395,6 +395,136 @@ async fn delete_waypoint_removes_it_from_leg() {
 
 #[tokio::test]
 #[ignore = "requires TEST_DATABASE_URL (Postgres)"]
+async fn waypoint_update_and_visited_roundtrip() {
+    let pool = test_pool().await;
+    let app = vagabond_server::build_app(pool.clone(), &test_config()).await;
+    let user_id = insert_test_user(&pool).await;
+    let trip_id = create_trip(&app, user_id, "Visited Trip").await;
+
+    let create_leg_req = Request::builder()
+        .method("POST")
+        .uri(format!("/api/v1/trips/{trip_id}/legs"))
+        .header("content-type", "application/json")
+        .header("X-Vagabond-User-Id", user_id.to_string())
+        .body(Body::from(json!({ "name": "Day 1" }).to_string()))
+        .expect("build create leg request");
+    let create_leg_res = app
+        .clone()
+        .oneshot(create_leg_req)
+        .await
+        .expect("create leg response");
+    let leg_id = Uuid::parse_str(
+        parse_json_body(
+            &create_leg_res
+                .into_body()
+                .collect()
+                .await
+                .expect("collect")
+                .to_bytes(),
+        )["data"]["id"]
+            .as_str()
+            .expect("leg id"),
+    )
+    .expect("leg uuid");
+
+    let create_wp_req = Request::builder()
+        .method("POST")
+        .uri(format!("/api/v1/trips/{trip_id}/legs/{leg_id}/waypoints"))
+        .header("content-type", "application/json")
+        .header("X-Vagabond-User-Id", user_id.to_string())
+        .body(Body::from(
+            json!({
+                "name": "Camp",
+                "notes": null,
+                "lon": -116.0,
+                "lat": 35.0
+            })
+            .to_string(),
+        ))
+        .expect("build create waypoint request");
+    let create_wp_res = app
+        .clone()
+        .oneshot(create_wp_req)
+        .await
+        .expect("create waypoint response");
+    assert_eq!(create_wp_res.status(), StatusCode::CREATED);
+    let create_wp_value = parse_json_body(
+        &create_wp_res
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes(),
+    );
+    let waypoint_id = Uuid::parse_str(create_wp_value["data"]["id"].as_str().unwrap()).unwrap();
+    assert_eq!(create_wp_value["data"]["visited"], false);
+
+    let put_req = Request::builder()
+        .method("PUT")
+        .uri(format!(
+            "/api/v1/trips/{trip_id}/legs/{leg_id}/waypoints/{waypoint_id}"
+        ))
+        .header("content-type", "application/json")
+        .header("X-Vagabond-User-Id", user_id.to_string())
+        .body(Body::from(
+            json!({
+                "name": "Camp Updated",
+                "notes": "stayed overnight",
+                "lon": -116.1,
+                "lat": 35.1,
+                "visited": true
+            })
+            .to_string(),
+        ))
+        .expect("build update waypoint request");
+    let put_res = app.clone().oneshot(put_req).await.expect("update response");
+    assert_eq!(put_res.status(), StatusCode::OK);
+    let put_value = parse_json_body(
+        &put_res
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes(),
+    );
+    assert_eq!(put_value["data"]["name"], "Camp Updated");
+    assert_eq!(put_value["data"]["visited"], true);
+    assert!(put_value["data"]["visited_at"].as_str().is_some());
+
+    let clear_req = Request::builder()
+        .method("PUT")
+        .uri(format!(
+            "/api/v1/trips/{trip_id}/legs/{leg_id}/waypoints/{waypoint_id}"
+        ))
+        .header("content-type", "application/json")
+        .header("X-Vagabond-User-Id", user_id.to_string())
+        .body(Body::from(
+            json!({
+                "name": "Camp Updated",
+                "notes": "stayed overnight",
+                "lon": -116.1,
+                "lat": 35.1,
+                "visited": false
+            })
+            .to_string(),
+        ))
+        .expect("build clear visited request");
+    let clear_res = app.oneshot(clear_req).await.expect("clear response");
+    assert_eq!(clear_res.status(), StatusCode::OK);
+    let clear_value = parse_json_body(
+        &clear_res
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes(),
+    );
+    assert_eq!(clear_value["data"]["visited"], false);
+    assert_eq!(clear_value["data"]["visited_at"], Value::Null);
+}
+
+#[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL (Postgres)"]
 async fn cross_user_cannot_add_leg_to_another_users_trip() {
     let pool = test_pool().await;
     let app = vagabond_server::build_app(pool.clone(), &test_config()).await;

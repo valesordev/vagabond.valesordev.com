@@ -21,6 +21,8 @@ pub struct CreateRigBody {
     pub model: String,
     pub year: i32,
     pub fuel_capacity_gal: Option<f64>,
+    pub battery_capacity_wh: Option<f64>,
+    pub solar_peak_watts: Option<f64>,
     pub notes: Option<String>,
 }
 
@@ -31,6 +33,8 @@ pub struct UpdateRigBody {
     pub model: String,
     pub year: i32,
     pub fuel_capacity_gal: Option<f64>,
+    pub battery_capacity_wh: Option<f64>,
+    pub solar_peak_watts: Option<f64>,
     pub notes: Option<String>,
 }
 
@@ -109,6 +113,8 @@ pub async fn create(
         model: validate_name(&body.model, "model")?,
         year: body.year,
         fuel_capacity_gal: body.fuel_capacity_gal,
+        battery_capacity_wh: body.battery_capacity_wh,
+        solar_peak_watts: body.solar_peak_watts,
         notes: body
             .notes
             .map(|n| n.trim().to_string())
@@ -140,6 +146,8 @@ pub async fn update(
         model: validate_name(&body.model, "model")?,
         year: body.year,
         fuel_capacity_gal: body.fuel_capacity_gal,
+        battery_capacity_wh: body.battery_capacity_wh,
+        solar_peak_watts: body.solar_peak_watts,
         notes: body
             .notes
             .map(|n| n.trim().to_string())

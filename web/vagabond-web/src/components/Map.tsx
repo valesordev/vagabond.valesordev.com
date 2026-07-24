@@ -94,7 +94,7 @@ function waypointsToFeatureCollection(waypoints: Waypoint[]): {
   features: Array<{
     type: "Feature";
     geometry: { type: "Point"; coordinates: [number, number] };
-    properties: { id: string; name: string; notes: string };
+    properties: { id: string; name: string; notes: string; visited: boolean };
   }>;
 } {
   return {
@@ -109,6 +109,7 @@ function waypointsToFeatureCollection(waypoints: Waypoint[]): {
         id: w.id,
         name: w.name,
         notes: w.notes ?? "",
+        visited: w.visited ?? false,
       },
     })),
   };
@@ -137,6 +138,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const [cursorCenter, setCursorCenter] = useState<[number, number]>(initialCenter);
   const [cursorZoom, setCursorZoom] = useState<number>(initialZoom);
   const [mapReady, setMapReady] = useState(false);
+  const [basemapError, setBasemapError] = useState<string | null>(null);
 
   const setViewport = useMapStore((state) => state.setViewport);
   const center = useMapStore((state) => state.center);
@@ -175,8 +177,13 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
 
     const createMap = async () => {
       let mapStyle = style;
+      setBasemapError(null);
 
-      if (pmtilesUrl) {
+      if (!pmtilesUrl) {
+        setBasemapError(
+          "Offline basemap unavailable: set NEXT_PUBLIC_PMTILES_URL to a local PMTiles archive.",
+        );
+      } else {
         ensurePmtilesProtocolRegistered();
         const pmtiles = new PMTiles(pmtilesUrl);
         pmtilesProtocol.add(pmtiles);
@@ -185,6 +192,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         } catch (error) {
           console.warn("Failed to load PMTiles archive. Rendering fallback map.", error);
           mapStyle = buildFallbackStyle();
+          setBasemapError(
+            "Could not load the PMTiles basemap. Check NEXT_PUBLIC_PMTILES_URL and that the archive is reachable.",
+          );
         }
       }
 
@@ -288,12 +298,18 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       const onEnter = (e: maplibregl.MapLayerMouseEvent) => {
         map.getCanvas().style.cursor = "pointer";
         const feature = e.features?.[0];
-        const props = feature?.properties as { name?: string; notes?: string } | undefined;
+        const props = feature?.properties as
+          | { name?: string; notes?: string; visited?: boolean | string }
+          | undefined;
         if (!props) {
           return;
         }
         const name = props.name ?? "";
         const notes = props.notes ?? "";
+        const visited = props.visited === true || props.visited === "true";
+        const visitedHtml = visited
+          ? `<div class="mt-1 text-xs text-emerald-300">Visited</div>`
+          : "";
         const notesHtml =
           notes.trim().length > 0
             ? `<div class="mt-1 text-xs text-neutral-300">${escapeHtml(notes)}</div>`
@@ -301,7 +317,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         popup
           .setLngLat(e.lngLat)
           .setHTML(
-            `<div class="text-sm"><strong>${escapeHtml(name)}</strong>${notesHtml}</div>`,
+            `<div class="text-sm"><strong>${escapeHtml(name)}</strong>${visitedHtml}${notesHtml}</div>`,
           )
           .addTo(map);
       };
@@ -341,7 +357,12 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       source: WAYPOINTS_SOURCE_ID,
       paint: {
         "circle-radius": 8,
-        "circle-color": "#3b82f6",
+        "circle-color": [
+          "case",
+          ["any", ["==", ["get", "visited"], true], ["==", ["get", "visited"], "true"]],
+          "#16a34a",
+          "#3b82f6",
+        ],
         "circle-stroke-width": 2,
         "circle-stroke-color": "#ffffff",
       },
@@ -436,6 +457,14 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
 
   return (
     <div className="relative h-full w-full">
+      {basemapError ? (
+        <div
+          role="alert"
+          className="absolute left-3 right-3 top-3 z-10 rounded-md border border-amber-500/40 bg-amber-950/90 px-3 py-2 text-sm text-amber-50 shadow"
+        >
+          {basemapError}
+        </div>
+      ) : null}
       <div ref={mapContainerRef} className="h-full w-full" />
       <div className="pointer-events-none absolute bottom-3 left-3 rounded bg-black/65 px-2 py-1 text-xs text-white">
         {`Lon ${cursorCenter[0].toFixed(5)} | Lat ${cursorCenter[1].toFixed(5)} | Zoom ${cursorZoom.toFixed(2)}`}

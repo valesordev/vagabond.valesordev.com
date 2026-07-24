@@ -29,12 +29,16 @@ const MAX_GPX_FILE_BYTES: usize = 10 * 1024 * 1024;
 pub struct CreateTripBody {
     pub name: String,
     pub description: Option<String>,
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateTripBody {
     pub name: String,
     pub description: Option<String>,
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -57,6 +61,16 @@ pub struct CreateWaypointBody {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct UpdateWaypointBody {
+    pub name: String,
+    pub notes: Option<String>,
+    pub lon: f64,
+    pub lat: f64,
+    pub visited: Option<bool>,
+    pub visited_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct LogBody {
     pub log_date: NaiveDate,
     pub notes: Option<String>,
@@ -71,6 +85,8 @@ struct TripResponse {
     user_id: Uuid,
     name: String,
     description: Option<String>,
+    start_date: Option<NaiveDate>,
+    end_date: Option<NaiveDate>,
     created_at: chrono::DateTime<chrono::Utc>,
     updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -82,6 +98,8 @@ impl From<Trip> for TripResponse {
             user_id: t.user_id,
             name: t.name,
             description: t.description,
+            start_date: t.start_date,
+            end_date: t.end_date,
             created_at: t.created_at,
             updated_at: t.updated_at,
         }
@@ -138,7 +156,15 @@ pub async fn create(
     let Json(body) = body.map_err(map_json_rejection)?;
     let name = validate_trip_name(&body.name)?;
     let description = normalize_trip_description(body.description)?;
-    let trip = trip_repo::create(&state.db, user.0, &name, description).await?;
+    let trip = trip_repo::create(
+        &state.db,
+        user.0,
+        &name,
+        description,
+        body.start_date,
+        body.end_date,
+    )
+    .await?;
     Ok((
         StatusCode::CREATED,
         ok_envelope(TripResponse::from(trip), json!({})),
@@ -154,7 +180,16 @@ pub async fn update(
     let Json(body) = body.map_err(map_json_rejection)?;
     let name = validate_trip_name(&body.name)?;
     let description = normalize_trip_description(body.description)?;
-    let trip = trip_repo::update_for_user(&state.db, id, user.0, &name, description).await?;
+    let trip = trip_repo::update_for_user(
+        &state.db,
+        id,
+        user.0,
+        &name,
+        description,
+        body.start_date,
+        body.end_date,
+    )
+    .await?;
     Ok(ok_envelope(TripResponse::from(trip), json!({})))
 }
 
@@ -257,6 +292,70 @@ pub async fn create_waypoint(
     )
     .await?;
     Ok((StatusCode::CREATED, ok_envelope(waypoint, json!({}))))
+}
+
+pub async fn update_waypoint(
+    State(state): State<AppState>,
+    user: UserId,
+    Path((trip_id, leg_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    body: Result<Json<UpdateWaypointBody>, JsonRejection>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let Json(body) = body.map_err(map_json_rejection)?;
+    trip_repo::get_by_id_for_user(&state.db, trip_id, user.0).await?;
+    trip_repo::ensure_leg_for_trip(&state.db, trip_id, leg_id, user.0).await?;
+    let name = body.name.trim();
+    if name.is_empty() {
+        return Err(ApiError::from(VagabondError::Validation(
+            "waypoint name must not be empty".into(),
+        )));
+    }
+    if !(-180.0..=180.0).contains(&body.lon) {
+        return Err(ApiError::from(VagabondError::Validation(
+            "lon must be within [-180, 180]".into(),
+        )));
+    }
+    if !(-90.0..=90.0).contains(&body.lat) {
+        return Err(ApiError::from(VagabondError::Validation(
+            "lat must be within [-90, 90]".into(),
+        )));
+    }
+    let notes = body
+        .notes
+        .map(|n| n.trim().to_string())
+        .filter(|n| !n.is_empty());
+
+    let existing = trip_repo::list_waypoints(&state.db, leg_id, user.0)
+        .await?
+        .into_iter()
+        .find(|w| w.id == id)
+        .ok_or_else(|| VagabondError::NotFound(format!("waypoint not found: {id}")))?;
+
+    let visited = body.visited.unwrap_or(existing.visited);
+    let visited_at = if !visited {
+        None
+    } else if let Some(ts) = body.visited_at {
+        Some(ts)
+    } else if existing.visited {
+        existing.visited_at
+    } else {
+        Some(chrono::Utc::now())
+    };
+
+    let waypoint = trip_repo::update_waypoint(
+        &state.db,
+        id,
+        user.0,
+        trip_repo::UpdateWaypointInput {
+            name,
+            notes: notes.as_deref(),
+            lon: body.lon,
+            lat: body.lat,
+            visited,
+            visited_at,
+        },
+    )
+    .await?;
+    Ok(ok_envelope(waypoint, json!({})))
 }
 
 pub async fn delete_waypoint(
@@ -541,6 +640,14 @@ pub async fn import_gpx(
                 .await?;
             routes_imported += 1;
         }
+    }
+
+    if waypoints_imported == 0 && routes_imported == 0 {
+        return Err(ApiError::new(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "EMPTY_GPX",
+            "gpx contained no waypoints or track/route geometry",
+        ));
     }
 
     tx.commit().await.map_err(|err| {

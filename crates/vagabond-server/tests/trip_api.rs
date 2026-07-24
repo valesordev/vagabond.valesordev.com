@@ -66,7 +66,9 @@ async fn trip_crud_roundtrip() {
         .body(Body::from(
             json!({
                 "name": "Eastern Sierra",
-                "description": "  June loop  "
+                "description": "  June loop  ",
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-08"
             })
             .to_string(),
         ))
@@ -80,6 +82,8 @@ async fn trip_crud_roundtrip() {
     let trip_id: Uuid = Uuid::parse_str(v["data"]["id"].as_str().unwrap()).unwrap();
     assert_eq!(v["data"]["name"], "Eastern Sierra");
     assert_eq!(v["data"]["description"], "June loop");
+    assert_eq!(v["data"]["start_date"], "2026-06-01");
+    assert_eq!(v["data"]["end_date"], "2026-06-08");
 
     let list_req = Request::builder()
         .uri("/api/v1/trips")
@@ -108,7 +112,9 @@ async fn trip_crud_roundtrip() {
         .body(Body::from(
             json!({
                 "name": "Eastern Sierra v2",
-                "description": null
+                "description": null,
+                "start_date": "2026-07-01",
+                "end_date": null
             })
             .to_string(),
         ))
@@ -118,6 +124,8 @@ async fn trip_crud_roundtrip() {
     let v = parse_json_body(res.into_body().collect().await.unwrap().to_bytes().as_ref());
     assert_eq!(v["data"]["name"], "Eastern Sierra v2");
     assert_eq!(v["data"]["description"], Value::Null);
+    assert_eq!(v["data"]["start_date"], "2026-07-01");
+    assert_eq!(v["data"]["end_date"], Value::Null);
 
     let del_req = Request::builder()
         .method("DELETE")

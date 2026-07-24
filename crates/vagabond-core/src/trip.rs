@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -132,6 +132,8 @@ pub struct Trip {
     pub user_id: Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -156,6 +158,8 @@ pub struct Waypoint {
     // Geometry stored in PostGIS; coordinates exposed as WGS-84 lon/lat.
     pub lon: f64,
     pub lat: f64,
+    pub visited: bool,
+    pub visited_at: Option<DateTime<Utc>>,
 }
 
 /// Flattened waypoint view for trip-level map rendering.
@@ -169,6 +173,8 @@ pub struct FlatWaypoint {
     pub name: String,
     pub lon: f64,
     pub lat: f64,
+    pub visited: bool,
+    pub visited_at: Option<DateTime<Utc>>,
 }
 
 /// A campsite — may be dispersed BLM, established, or stealth urban.

@@ -31,6 +31,8 @@ export type Trip = {
   user_id: string;
   name: string;
   description: string | null;
+  start_date: string | null;
+  end_date: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -62,6 +64,8 @@ export type Waypoint = {
   notes: string | null;
   lon: number;
   lat: number;
+  visited: boolean;
+  visited_at: string | null;
 };
 
 export type ListWaypointsMeta = {
@@ -82,14 +86,27 @@ export type CreateWaypointInput = {
   lat: number;
 };
 
+export type UpdateWaypointInput = {
+  name: string;
+  notes?: string | null;
+  lon: number;
+  lat: number;
+  visited?: boolean;
+  visited_at?: string | null;
+};
+
 export type CreateTripInput = {
   name: string;
   description?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 };
 
 export type UpdateTripInput = {
   name: string;
   description?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 };
 
 export type Rig = {
@@ -100,6 +117,8 @@ export type Rig = {
   model: string;
   year: number;
   fuel_capacity_gal: number | null;
+  battery_capacity_wh: number | null;
+  solar_peak_watts: number | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -157,6 +176,8 @@ export type CreateRigInput = {
   model: string;
   year: number;
   fuel_capacity_gal?: number | null;
+  battery_capacity_wh?: number | null;
+  solar_peak_watts?: number | null;
   notes?: string | null;
 };
 
@@ -357,6 +378,8 @@ function normalizeWaypointListRow(row: WaypointListApiRow): Waypoint {
   return {
     ...row,
     notes: row.notes ?? null,
+    visited: row.visited ?? false,
+    visited_at: row.visited_at ?? null,
   };
 }
 
@@ -368,6 +391,8 @@ type WaypointCreateApiRow = {
   notes: string | null;
   lon: number;
   lat: number;
+  visited?: boolean;
+  visited_at?: string | null;
 };
 
 export function listTripWaypoints(tripId: string): Promise<ApiEnvelope<Waypoint[], ListWaypointsMeta>> {
@@ -404,6 +429,40 @@ export function createWaypoint(
       trip_id: tripId,
       leg_seq: 0,
       notes: envelope.data.notes ?? null,
+      visited: envelope.data.visited ?? false,
+      visited_at: envelope.data.visited_at ?? null,
+    },
+  }));
+}
+
+export function updateWaypoint(
+  tripId: string,
+  legId: string,
+  waypointId: string,
+  input: UpdateWaypointInput,
+): Promise<ApiEnvelope<Waypoint, Record<string, never>>> {
+  return request<WaypointCreateApiRow, Record<string, never>>(
+    `/trips/${tripId}/legs/${legId}/waypoints/${waypointId}`,
+    {
+      method: "PUT",
+      body: {
+        name: input.name,
+        notes: input.notes ?? null,
+        lon: input.lon,
+        lat: input.lat,
+        visited: input.visited,
+        visited_at: input.visited_at,
+      },
+    },
+  ).then((envelope) => ({
+    ...envelope,
+    data: {
+      ...envelope.data,
+      trip_id: tripId,
+      leg_seq: 0,
+      notes: envelope.data.notes ?? null,
+      visited: envelope.data.visited ?? false,
+      visited_at: envelope.data.visited_at ?? null,
     },
   }));
 }
@@ -491,6 +550,8 @@ export function createRig(input: CreateRigInput): Promise<ApiEnvelope<Rig, Recor
       model: input.model,
       year: input.year,
       fuel_capacity_gal: input.fuel_capacity_gal ?? null,
+      battery_capacity_wh: input.battery_capacity_wh ?? null,
+      solar_peak_watts: input.solar_peak_watts ?? null,
       notes: input.notes ?? null,
     },
   });
@@ -505,6 +566,8 @@ export function updateRig(id: string, input: UpdateRigInput): Promise<ApiEnvelop
       model: input.model,
       year: input.year,
       fuel_capacity_gal: input.fuel_capacity_gal ?? null,
+      battery_capacity_wh: input.battery_capacity_wh ?? null,
+      solar_peak_watts: input.solar_peak_watts ?? null,
       notes: input.notes ?? null,
     },
   });

@@ -70,6 +70,8 @@ async fn rig_crud_roundtrip() {
                 "model": "4Runner",
                 "year": 2021,
                 "fuel_capacity_gal": 23.0,
+                "battery_capacity_wh": 3162.0,
+                "solar_peak_watts": 400.0,
                 "notes": "daily driver + trip rig"
             })
             .to_string(),
@@ -79,6 +81,8 @@ async fn rig_crud_roundtrip() {
     assert_eq!(res.status(), StatusCode::CREATED);
     let v = parse_json_body(&res.into_body().collect().await.unwrap().to_bytes());
     let rig_id = Uuid::parse_str(v["data"]["id"].as_str().unwrap()).unwrap();
+    assert_eq!(v["data"]["battery_capacity_wh"], 3162.0);
+    assert_eq!(v["data"]["solar_peak_watts"], 400.0);
 
     let get_req = Request::builder()
         .uri(format!("/api/v1/rigs/{rig_id}"))
@@ -112,6 +116,8 @@ async fn rig_crud_roundtrip() {
                 "model": "4Runner",
                 "year": 2021,
                 "fuel_capacity_gal": 24.5,
+                "battery_capacity_wh": 2000.0,
+                "solar_peak_watts": 400.0,
                 "notes": null
             })
             .to_string(),
@@ -122,6 +128,7 @@ async fn rig_crud_roundtrip() {
     let v = parse_json_body(&res.into_body().collect().await.unwrap().to_bytes());
     assert_eq!(v["data"]["name"], "4Runner Trail");
     assert_eq!(v["data"]["notes"], Value::Null);
+    assert_eq!(v["data"]["battery_capacity_wh"], 2000.0);
 
     let delete_req = Request::builder()
         .method("DELETE")

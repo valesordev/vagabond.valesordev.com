@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import type { Rig } from "@/lib/api";
-import { useRigs, useUpdateRig } from "@/hooks/useRig";
+import { useDeleteRig, useRigs, useUpdateRig } from "@/hooks/useRig";
 
 const NAME_MAX_LENGTH = 256;
 const MAKE_MAX_LENGTH = 256;
@@ -35,12 +35,15 @@ function formatFuelRangeMiles(fuelGal: number | null) {
 export default function RigPage() {
   const rigsQuery = useRigs();
   const updateRigMutation = useUpdateRig();
+  const deleteRigMutation = useDeleteRig();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [editingName, setEditingName] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(false);
   const [editingFuel, setEditingFuel] = useState(false);
+  const [editingPower, setEditingPower] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
 
   const [nameDraft, setNameDraft] = useState("");
@@ -48,6 +51,8 @@ export default function RigPage() {
   const [modelDraft, setModelDraft] = useState("");
   const [yearDraft, setYearDraft] = useState("");
   const [fuelDraft, setFuelDraft] = useState("");
+  const [batteryDraft, setBatteryDraft] = useState("");
+  const [solarDraft, setSolarDraft] = useState("");
   const [notesDraft, setNotesDraft] = useState("");
 
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -66,6 +71,14 @@ export default function RigPage() {
     setModelDraft(rig.model);
     setYearDraft(String(rig.year));
     setFuelDraft(rig.fuel_capacity_gal !== null && rig.fuel_capacity_gal !== undefined ? String(rig.fuel_capacity_gal) : "");
+    setBatteryDraft(
+      rig.battery_capacity_wh !== null && rig.battery_capacity_wh !== undefined
+        ? String(rig.battery_capacity_wh)
+        : "",
+    );
+    setSolarDraft(
+      rig.solar_peak_watts !== null && rig.solar_peak_watts !== undefined ? String(rig.solar_peak_watts) : "",
+    );
     setNotesDraft(rig.notes ?? "");
   }, [rig]);
 
@@ -97,6 +110,8 @@ export default function RigPage() {
     year: string;
     fuel: string;
     notes: string;
+    battery?: string;
+    solar?: string;
   }) {
     if (!rig) {
       return;
@@ -107,6 +122,8 @@ export default function RigPage() {
     const trimmedModel = next.model.trim();
     const trimmedYear = next.year.trim();
     const normalizedNotes = next.notes.trim() ? next.notes.trim() : null;
+    const batteryRaw = next.battery ?? batteryDraft;
+    const solarRaw = next.solar ?? solarDraft;
 
     if (!trimmedName) {
       setSaveState("error");
@@ -165,6 +182,20 @@ export default function RigPage() {
       return;
     }
 
+    const batteryCapacity = normalizeFuelInput(batteryRaw);
+    if (batteryRaw.trim() && batteryCapacity === null) {
+      setSaveState("error");
+      setSaveMessage("Enter a valid battery capacity in Wh.");
+      return;
+    }
+
+    const solarPeak = normalizeFuelInput(solarRaw);
+    if (solarRaw.trim() && solarPeak === null) {
+      setSaveState("error");
+      setSaveMessage("Enter a valid solar peak watts value.");
+      return;
+    }
+
     if (next.notes.length > NOTES_MAX_LENGTH) {
       setSaveState("error");
       setSaveMessage(`Notes must be ${NOTES_MAX_LENGTH} characters or fewer.`);
@@ -177,6 +208,8 @@ export default function RigPage() {
       rig.model === trimmedModel &&
       rig.year === yearNum &&
       (rig.fuel_capacity_gal ?? null) === (fuelCapacity ?? null) &&
+      (rig.battery_capacity_wh ?? null) === (batteryCapacity ?? null) &&
+      (rig.solar_peak_watts ?? null) === (solarPeak ?? null) &&
       (rig.notes ?? null) === normalizedNotes;
 
     if (unchanged) {
@@ -197,6 +230,8 @@ export default function RigPage() {
           model: trimmedModel,
           year: yearNum,
           fuel_capacity_gal: fuelCapacity,
+          battery_capacity_wh: batteryCapacity,
+          solar_peak_watts: solarPeak,
           notes: normalizedNotes,
         },
       });
@@ -205,6 +240,20 @@ export default function RigPage() {
     } catch (error) {
       setSaveState("error");
       setSaveMessage(error instanceof Error ? error.message : "Failed to save changes.");
+    }
+  }
+
+  async function handleDeleteRig() {
+    if (!rig) {
+      return;
+    }
+    try {
+      await deleteRigMutation.mutateAsync(rig.id);
+      setIsDeleteOpen(false);
+    } catch (error) {
+      setSaveState("error");
+      setSaveMessage(error instanceof Error ? error.message : "Failed to delete rig.");
+      setIsDeleteOpen(false);
     }
   }
 
@@ -508,6 +557,81 @@ export default function RigPage() {
             </div>
 
             <div className="space-y-1">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Power system</p>
+              {editingPower ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Battery (Wh)</p>
+                    <Input
+                      autoFocus
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      value={batteryDraft}
+                      onChange={(event) => setBatteryDraft(event.target.value)}
+                      placeholder="e.g. 3162"
+                      onBlur={async () => {
+                        setEditingPower(false);
+                        await commitRigUpdate({
+                          name: nameDraft,
+                          make: makeDraft,
+                          model: modelDraft,
+                          year: yearDraft,
+                          fuel: fuelDraft,
+                          notes: notesDraft,
+                          battery: batteryDraft,
+                          solar: solarDraft,
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Solar peak (W)</p>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      value={solarDraft}
+                      onChange={(event) => setSolarDraft(event.target.value)}
+                      placeholder="e.g. 400"
+                      onBlur={async () => {
+                        setEditingPower(false);
+                        await commitRigUpdate({
+                          name: nameDraft,
+                          make: makeDraft,
+                          model: modelDraft,
+                          year: yearDraft,
+                          fuel: fuelDraft,
+                          notes: notesDraft,
+                          battery: batteryDraft,
+                          solar: solarDraft,
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="w-full rounded-md border border-transparent p-1 text-left hover:border-border hover:bg-muted/40"
+                  onClick={() => setEditingPower(true)}
+                >
+                  {rig.battery_capacity_wh != null || rig.solar_peak_watts != null ? (
+                    <span>
+                      {rig.battery_capacity_wh != null ? `${rig.battery_capacity_wh} Wh` : "Battery —"}
+                      {" · "}
+                      {rig.solar_peak_watts != null ? `${rig.solar_peak_watts} W solar` : "Solar —"}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Add battery and solar capacity...</span>
+                  )}
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-1">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Notes</p>
               {editingNotes ? (
                 <Textarea
@@ -562,6 +686,30 @@ export default function RigPage() {
 
             <div className="h-5 text-xs text-muted-foreground">
               {saveState === "saving" || saveState === "saved" || saveState === "error" ? saveMessage : null}
+            </div>
+
+            <div className="border-t border-border pt-4">
+              {isDeleteOpen ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-destructive">Delete this rig and its gear?</p>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={deleteRigMutation.isPending}
+                    onClick={() => void handleDeleteRig()}
+                  >
+                    {deleteRigMutation.isPending ? "Deleting..." : "Confirm delete"}
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setIsDeleteOpen(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsDeleteOpen(true)}>
+                  Delete rig
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

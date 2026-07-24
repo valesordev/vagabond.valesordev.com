@@ -23,7 +23,7 @@ pub fn router() -> Router<AppState> {
         )
         .route(
             "/trips/:trip_id/legs/:leg_id/waypoints/:id",
-            axum::routing::delete(trips::delete_waypoint),
+            axum::routing::put(trips::update_waypoint).delete(trips::delete_waypoint),
         )
         .route("/trips/:trip_id/waypoints", get(trips::list_all_waypoints))
         .route(
