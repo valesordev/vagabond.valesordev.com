@@ -31,6 +31,7 @@ import {
   useImportGpx,
   useTripLegs,
   useTripWaypoints,
+  useUpdateWaypoint,
   tripLegsQueryKey,
 } from "@/hooks/useWaypoints";
 import { useDeleteTrip, useTrip, useUpdateTrip } from "@/hooks/useTrips";
@@ -105,6 +106,7 @@ export default function TripDetailPage() {
   const deleteTripMutation = useDeleteTrip();
   const createLegMutation = useCreateLeg();
   const createWaypointMutation = useCreateWaypoint();
+  const updateWaypointMutation = useUpdateWaypoint();
   const deleteWaypointMutation = useDeleteWaypoint();
   const importGpxMutation = useImportGpx();
   const eventsQuery = useTripEvents(tripId);
@@ -117,11 +119,15 @@ export default function TripDetailPage() {
   const [editingDescription, setEditingDescription] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [startDateDraft, setStartDateDraft] = useState("");
+  const [endDateDraft, setEndDateDraft] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveMessage, setSaveMessage] = useState<string>("");
 
   const [addingWaypoint, setAddingWaypoint] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editingWaypointId, setEditingWaypointId] = useState<string | null>(null);
+  const [editWaypointName, setEditWaypointName] = useState("");
   const [pendingLon, setPendingLon] = useState(0);
   const [pendingLat, setPendingLat] = useState(0);
 
@@ -153,6 +159,8 @@ export default function TripDetailPage() {
     }
     setNameDraft(trip.name);
     setDescriptionDraft(trip.description ?? "");
+    setStartDateDraft(trip.start_date ?? "");
+    setEndDateDraft(trip.end_date ?? "");
   }, [trip]);
 
   useEffect(() => {
@@ -284,7 +292,12 @@ export default function TripDetailPage() {
     }, 1400);
   }
 
-  async function commitEdit(nextName: string, nextDescription: string) {
+  async function commitEdit(
+    nextName: string,
+    nextDescription: string,
+    nextStartDate: string = startDateDraft,
+    nextEndDate: string = endDateDraft,
+  ) {
     if (!trip) {
       return;
     }
@@ -307,7 +320,13 @@ export default function TripDetailPage() {
     }
 
     const normalizedDescription = nextDescription.trim() ? nextDescription.trim() : null;
-    const unchanged = trip.name === trimmedName && (trip.description ?? null) === normalizedDescription;
+    const normalizedStart = nextStartDate.trim() ? nextStartDate.trim() : null;
+    const normalizedEnd = nextEndDate.trim() ? nextEndDate.trim() : null;
+    const unchanged =
+      trip.name === trimmedName &&
+      (trip.description ?? null) === normalizedDescription &&
+      (trip.start_date ?? null) === normalizedStart &&
+      (trip.end_date ?? null) === normalizedEnd;
     if (unchanged) {
       setSaveState("idle");
       setSaveMessage("");
@@ -323,6 +342,8 @@ export default function TripDetailPage() {
         input: {
           name: trimmedName,
           description: normalizedDescription,
+          start_date: normalizedStart,
+          end_date: normalizedEnd,
         },
       });
 
@@ -361,6 +382,54 @@ export default function TripDetailPage() {
     } catch (error) {
       setSaveState("error");
       setSaveMessage(error instanceof Error ? error.message : "Failed to delete waypoint.");
+    }
+  }
+
+  async function handleToggleVisited(waypoint: (typeof waypoints)[number]) {
+    try {
+      await updateWaypointMutation.mutateAsync({
+        tripId,
+        legId: waypoint.leg_id,
+        waypointId: waypoint.id,
+        input: {
+          name: waypoint.name,
+          notes: waypoint.notes,
+          lon: waypoint.lon,
+          lat: waypoint.lat,
+          visited: !waypoint.visited,
+        },
+      });
+    } catch (error) {
+      setSaveState("error");
+      setSaveMessage(error instanceof Error ? error.message : "Failed to update waypoint.");
+    }
+  }
+
+  async function handleSaveWaypointName(waypoint: (typeof waypoints)[number]) {
+    const trimmed = editWaypointName.trim();
+    if (!trimmed) {
+      setSaveState("error");
+      setSaveMessage("Waypoint name is required.");
+      return;
+    }
+    try {
+      await updateWaypointMutation.mutateAsync({
+        tripId,
+        legId: waypoint.leg_id,
+        waypointId: waypoint.id,
+        input: {
+          name: trimmed,
+          notes: waypoint.notes,
+          lon: waypoint.lon,
+          lat: waypoint.lat,
+          visited: waypoint.visited,
+          visited_at: waypoint.visited_at,
+        },
+      });
+      setEditingWaypointId(null);
+    } catch (error) {
+      setSaveState("error");
+      setSaveMessage(error instanceof Error ? error.message : "Failed to update waypoint.");
     }
   }
 
@@ -517,6 +586,27 @@ export default function TripDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Start</p>
+                  <Input
+                    type="date"
+                    value={startDateDraft}
+                    onChange={(event) => setStartDateDraft(event.target.value)}
+                    onBlur={() => void commitEdit(nameDraft, descriptionDraft, startDateDraft, endDateDraft)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">End</p>
+                  <Input
+                    type="date"
+                    value={endDateDraft}
+                    onChange={(event) => setEndDateDraft(event.target.value)}
+                    onBlur={() => void commitEdit(nameDraft, descriptionDraft, startDateDraft, endDateDraft)}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Description</p>
                 {editingDescription ? (
@@ -572,14 +662,45 @@ export default function TripDetailPage() {
                     {waypoints.map((w) => (
                       <li key={w.id}>
                         <div className="group flex items-center gap-2 rounded-md py-1 pl-1 pr-0">
-                          <button
-                            type="button"
-                            className="min-w-0 flex-1 truncate text-left hover:text-primary"
-                            onClick={() => handleWaypointRowClick(w.lon, w.lat)}
-                          >
-                            <span className="text-muted-foreground">◦ </span>
-                            {w.name}
-                          </button>
+                          <input
+                            type="checkbox"
+                            className="shrink-0"
+                            checked={w.visited}
+                            aria-label={`Mark ${w.name} visited`}
+                            onChange={() => void handleToggleVisited(w)}
+                          />
+                          {editingWaypointId === w.id ? (
+                            <Input
+                              className="h-8 min-w-0 flex-1"
+                              value={editWaypointName}
+                              autoFocus
+                              onChange={(event) => setEditWaypointName(event.target.value)}
+                              onBlur={() => void handleSaveWaypointName(w)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                  event.preventDefault();
+                                  void handleSaveWaypointName(w);
+                                }
+                                if (event.key === "Escape") {
+                                  event.preventDefault();
+                                  setEditingWaypointId(null);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              className={`min-w-0 flex-1 truncate text-left hover:text-primary ${w.visited ? "text-muted-foreground line-through" : ""}`}
+                              onClick={() => handleWaypointRowClick(w.lon, w.lat)}
+                              onDoubleClick={() => {
+                                setEditingWaypointId(w.id);
+                                setEditWaypointName(w.name);
+                              }}
+                            >
+                              <span className="text-muted-foreground">◦ </span>
+                              {w.name}
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"

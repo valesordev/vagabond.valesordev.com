@@ -4,12 +4,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   type CreateWaypointInput,
+  type UpdateWaypointInput,
   createLeg,
   createWaypoint,
   deleteWaypoint,
   importGpx,
   listTripLegs,
   listTripWaypoints,
+  updateWaypoint,
 } from "@/lib/api";
 
 export function waypointsQueryKey(tripId: string) {
@@ -61,6 +63,28 @@ export function useCreateWaypoint() {
       legId: string;
       input: CreateWaypointInput;
     }) => createWaypoint(tripId, legId, input),
+    onSettled: (_data, _error, { tripId }) => {
+      void queryClient.invalidateQueries({ queryKey: waypointsQueryKey(tripId) });
+      void queryClient.invalidateQueries({ queryKey: tripLegsQueryKey(tripId) });
+    },
+  });
+}
+
+export function useUpdateWaypoint() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      tripId,
+      legId,
+      waypointId,
+      input,
+    }: {
+      tripId: string;
+      legId: string;
+      waypointId: string;
+      input: UpdateWaypointInput;
+    }) => updateWaypoint(tripId, legId, waypointId, input),
     onSettled: (_data, _error, { tripId }) => {
       void queryClient.invalidateQueries({ queryKey: waypointsQueryKey(tripId) });
       void queryClient.invalidateQueries({ queryKey: tripLegsQueryKey(tripId) });

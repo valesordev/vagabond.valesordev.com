@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpsertFieldLog } from "@/hooks/useFieldLogs";
-import { type FieldLog } from "@/lib/api";
+import { ApiClientError, type FieldLog } from "@/lib/api";
 
 function todayYmd(): string {
   const d = new Date();
@@ -179,9 +179,22 @@ export function FieldLogEntryForm({
       </div>
 
       {upsert.error ? (
-        <p className="text-sm text-destructive">
-          {upsert.error instanceof Error ? upsert.error.message : "Failed to save entry."}
-        </p>
+        <div role="alert" className="space-y-1 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          <p>{upsert.error instanceof Error ? upsert.error.message : "Failed to save entry."}</p>
+          {upsert.error instanceof ApiClientError &&
+          (upsert.error.status >= 500 || upsert.error.status === 0) ? (
+            <p>
+              Field log writes need a reachable Vagabond server (Starlink LAN or local stack). Offline
+              write queuing is not available yet.
+            </p>
+          ) : null}
+          {!(upsert.error instanceof ApiClientError) ? (
+            <p>
+              Field log writes need a reachable Vagabond server (Starlink LAN or local stack). Offline
+              write queuing is not available yet.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="flex flex-wrap justify-end gap-2 pt-2">

@@ -37,6 +37,8 @@ export function CreateRigDialog({ open, onOpenChange }: CreateRigDialogProps) {
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
   const [fuelCapacityGal, setFuelCapacityGal] = useState("");
+  const [batteryCapacityWh, setBatteryCapacityWh] = useState("");
+  const [solarPeakWatts, setSolarPeakWatts] = useState("");
   const [notes, setNotes] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
@@ -44,6 +46,8 @@ export function CreateRigDialog({ open, onOpenChange }: CreateRigDialogProps) {
     model?: string;
     year?: string;
     fuel_capacity_gal?: string;
+    battery_capacity_wh?: string;
+    solar_peak_watts?: string;
     notes?: string;
   }>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -54,6 +58,8 @@ export function CreateRigDialog({ open, onOpenChange }: CreateRigDialogProps) {
     setModel("");
     setYear("");
     setFuelCapacityGal("");
+    setBatteryCapacityWh("");
+    setSolarPeakWatts("");
     setNotes("");
     setFieldErrors({});
     setSubmitError(null);
@@ -102,6 +108,20 @@ export function CreateRigDialog({ open, onOpenChange }: CreateRigDialogProps) {
       }
     }
 
+    if (batteryCapacityWh.trim()) {
+      const batteryNum = Number.parseFloat(batteryCapacityWh);
+      if (!Number.isFinite(batteryNum) || batteryNum < 0) {
+        errors.battery_capacity_wh = "Enter a valid battery capacity in Wh.";
+      }
+    }
+
+    if (solarPeakWatts.trim()) {
+      const solarNum = Number.parseFloat(solarPeakWatts);
+      if (!Number.isFinite(solarNum) || solarNum < 0) {
+        errors.solar_peak_watts = "Enter a valid solar peak watts value.";
+      }
+    }
+
     if (notes.length > NOTES_MAX_LENGTH) {
       errors.notes = `Notes must be ${NOTES_MAX_LENGTH} characters or fewer.`;
     }
@@ -121,6 +141,10 @@ export function CreateRigDialog({ open, onOpenChange }: CreateRigDialogProps) {
     const yearNum = Number.parseInt(year.trim(), 10);
     const fuelTrimmed = fuelCapacityGal.trim();
     const fuelParsed = fuelTrimmed ? Number.parseFloat(fuelTrimmed) : null;
+    const batteryTrimmed = batteryCapacityWh.trim();
+    const batteryParsed = batteryTrimmed ? Number.parseFloat(batteryTrimmed) : null;
+    const solarTrimmed = solarPeakWatts.trim();
+    const solarParsed = solarTrimmed ? Number.parseFloat(solarTrimmed) : null;
 
     try {
       await createRigMutation.mutateAsync({
@@ -129,6 +153,8 @@ export function CreateRigDialog({ open, onOpenChange }: CreateRigDialogProps) {
         model: model.trim(),
         year: yearNum,
         fuel_capacity_gal: fuelParsed !== null && Number.isFinite(fuelParsed) ? fuelParsed : null,
+        battery_capacity_wh: batteryParsed !== null && Number.isFinite(batteryParsed) ? batteryParsed : null,
+        solar_peak_watts: solarParsed !== null && Number.isFinite(solarParsed) ? solarParsed : null,
         notes: notes.trim() ? notes.trim() : null,
       });
 
@@ -235,6 +261,43 @@ export function CreateRigDialog({ open, onOpenChange }: CreateRigDialogProps) {
               />
               {fieldErrors.fuel_capacity_gal ? (
                 <p className="text-sm text-destructive">{fieldErrors.fuel_capacity_gal}</p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="rig-battery">Battery capacity (Wh)</Label>
+              <Input
+                id="rig-battery"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                value={batteryCapacityWh}
+                onChange={(event) => setBatteryCapacityWh(event.target.value)}
+                placeholder="Optional"
+                aria-invalid={Boolean(fieldErrors.battery_capacity_wh)}
+              />
+              {fieldErrors.battery_capacity_wh ? (
+                <p className="text-sm text-destructive">{fieldErrors.battery_capacity_wh}</p>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rig-solar">Solar peak (W)</Label>
+              <Input
+                id="rig-solar"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                value={solarPeakWatts}
+                onChange={(event) => setSolarPeakWatts(event.target.value)}
+                placeholder="Optional"
+                aria-invalid={Boolean(fieldErrors.solar_peak_watts)}
+              />
+              {fieldErrors.solar_peak_watts ? (
+                <p className="text-sm text-destructive">{fieldErrors.solar_peak_watts}</p>
               ) : null}
             </div>
           </div>

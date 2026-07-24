@@ -12,6 +12,8 @@ pub struct Rig {
     pub model: String,
     pub year: i32,
     pub fuel_capacity_gal: Option<f64>,
+    pub battery_capacity_wh: Option<f64>,
+    pub solar_peak_watts: Option<f64>,
     pub notes: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

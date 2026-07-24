@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Newsreader } from "next/font/google";
 
+import { AppShell } from "@/components/AppShell";
 import { Providers } from "@/components/Providers";
 import { LifestylePreferencesProvider } from "@/contexts/LifestylePreferencesContext";
 
@@ -32,7 +33,9 @@ export default function RootLayout({
     <html lang="en" data-density="comfortable" data-conn="online">
       <body className={`${manrope.variable} ${newsreader.variable}`}>
         <Providers>
-          <LifestylePreferencesProvider>{children}</LifestylePreferencesProvider>
+          <LifestylePreferencesProvider>
+            <AppShell>{children}</AppShell>
+          </LifestylePreferencesProvider>
         </Providers>
       </body>
     </html>

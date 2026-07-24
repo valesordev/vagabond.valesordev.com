@@ -192,6 +192,43 @@ async fn returns_unprocessable_entity_for_invalid_gpx() {
 
 #[tokio::test]
 #[ignore = "requires TEST_DATABASE_URL (Postgres)"]
+async fn returns_unprocessable_entity_for_empty_gpx() {
+    let pool = test_pool().await;
+    let app = vagabond_server::build_app(pool.clone(), &test_config()).await;
+    let user_id = insert_test_user(&pool).await;
+    let trip_id = create_trip(&app, user_id).await;
+
+    let empty_gpx = r#"<?xml version="1.0"?><gpx version="1.1" creator="test"></gpx>"#;
+    let boundary = "empty-gpx-boundary";
+    let req = Request::builder()
+        .method("POST")
+        .uri(format!("/api/v1/trips/{trip_id}/import/gpx"))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={boundary}"),
+        )
+        .header("X-Vagabond-User-Id", user_id.to_string())
+        .body(Body::from(multipart_body(
+            boundary,
+            Some("empty.gpx"),
+            empty_gpx,
+        )))
+        .expect("build import request");
+    let res = app.oneshot(req).await.expect("import request");
+    assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let v = parse_json_body(
+        res.into_body()
+            .collect()
+            .await
+            .expect("collect body")
+            .to_bytes()
+            .as_ref(),
+    );
+    assert_eq!(v["error"]["code"], "EMPTY_GPX");
+}
+
+#[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL (Postgres)"]
 async fn returns_bad_request_when_file_field_missing() {
     let pool = test_pool().await;
     let app = vagabond_server::build_app(pool.clone(), &test_config()).await;

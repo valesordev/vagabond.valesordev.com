@@ -34,12 +34,16 @@ export function CreateTripDialog({ open, onOpenChange }: CreateTripDialogProps) 
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; description?: string }>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   function resetForm() {
     setName("");
     setDescription("");
+    setStartDate("");
+    setEndDate("");
     setFieldErrors({});
     setSubmitError(null);
   }
@@ -74,6 +78,8 @@ export function CreateTripDialog({ open, onOpenChange }: CreateTripDialogProps) 
       const response = await createTripMutation.mutateAsync({
         name: name.trim(),
         description: description.trim() ? description.trim() : null,
+        start_date: startDate.trim() ? startDate.trim() : null,
+        end_date: endDate.trim() ? endDate.trim() : null,
       });
 
       await queryClient.invalidateQueries({ queryKey: ["trips"] });
@@ -119,6 +125,27 @@ export function CreateTripDialog({ open, onOpenChange }: CreateTripDialogProps) 
               required
             />
             {fieldErrors.name ? <p className="text-sm text-destructive">{fieldErrors.name}</p> : null}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="trip-start-date">Start date</Label>
+              <Input
+                id="trip-start-date"
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="trip-end-date">End date</Label>
+              <Input
+                id="trip-end-date"
+                type="date"
+                value={endDate}
+                onChange={(event) => setEndDate(event.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

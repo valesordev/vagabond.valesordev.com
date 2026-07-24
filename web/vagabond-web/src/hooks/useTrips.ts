@@ -64,6 +64,8 @@ export function useCreateTrip() {
         user_id: "00000000-0000-0000-0000-000000000001",
         name: input.name,
         description: input.description ?? null,
+        start_date: input.start_date ?? null,
+        end_date: input.end_date ?? null,
         created_at: nowIso,
         updated_at: nowIso,
       };

@@ -30,12 +30,15 @@ git clone https://github.com/YOUR_ORG/vagabond.git && cd vagabond
 cp .env.example .env
 # Edit .env — at minimum set POSTGRES_PASSWORD and JWT_SECRET
 
-# 3. Launch core stack
+# 3. Launch core stack (postgres, API, web, martin, gateway — no Keycloak/Grafana)
 docker compose up -d
 
 # 4. Open
 open http://localhost
 ```
+
+Core local auth uses `VAGABOND_DEV_AUTH=true` by default (header user id). Gateway `/auth/...`
+returns upstream errors until the `auth` profile is enabled.
 
 Gateway routes:
 - Web: `http://localhost/`
@@ -43,22 +46,29 @@ Gateway routes:
 - Tiles: `http://localhost/tiles/...`
 - Keycloak (auth profile): `http://localhost/auth/...`
 
-On launch, Compose now runs a one-shot `postgres-dev-user-seed` service that upserts a
+On launch, Compose runs a one-shot `postgres-dev-user-seed` service that upserts a
 default dev user row in `users` (configurable via `VAGABOND_DEV_USER_*` env vars), so FK
 references to `user_id` work immediately after a fresh boot.
 
 ### With auth (Keycloak)
 
 ```bash
-docker compose up -d
+# Disable header auth in .env when using Keycloak:
+#   VAGABOND_DEV_AUTH=false
+#   NEXT_PUBLIC_VAGABOND_DEV_AUTH=false
+docker compose --profile auth up -d
 ```
 
-### Full stack (everything)
+### Storage / observability / full
 
 ```bash
-docker compose up -d
+docker compose --profile storage up -d
+docker compose --profile observability up -d
+# Everything optional:
+docker compose --profile auth --profile storage --profile observability up -d
 ```
 
+Compose profiles: **default** = core · `auth` = Keycloak · `storage` = MinIO · `observability` = Prometheus/Grafana/exporters.
 ---
 
 ## Architecture

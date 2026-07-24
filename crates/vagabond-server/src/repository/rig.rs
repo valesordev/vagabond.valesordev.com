@@ -11,6 +11,8 @@ pub struct CreateRigInput {
     pub model: String,
     pub year: i32,
     pub fuel_capacity_gal: Option<f64>,
+    pub battery_capacity_wh: Option<f64>,
+    pub solar_peak_watts: Option<f64>,
     pub notes: Option<String>,
 }
 
@@ -21,6 +23,8 @@ pub struct UpdateRigInput {
     pub model: String,
     pub year: i32,
     pub fuel_capacity_gal: Option<f64>,
+    pub battery_capacity_wh: Option<f64>,
+    pub solar_peak_watts: Option<f64>,
     pub notes: Option<String>,
 }
 
@@ -51,6 +55,8 @@ struct RigRow {
     model: String,
     year: i32,
     fuel_capacity_gal: Option<f64>,
+    battery_capacity_wh: Option<f64>,
+    solar_peak_watts: Option<f64>,
     notes: Option<String>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -113,6 +119,8 @@ fn row_to_rig(row: RigRow) -> Rig {
         model: row.model,
         year: row.year,
         fuel_capacity_gal: row.fuel_capacity_gal,
+        battery_capacity_wh: row.battery_capacity_wh,
+        solar_peak_watts: row.solar_peak_watts,
         notes: row.notes,
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -136,7 +144,11 @@ fn row_to_gear(row: GearRow) -> Result<GearItem, VagabondError> {
 pub async fn list_for_user(db: &PgPool, user_id: Uuid) -> Result<Vec<Rig>, VagabondError> {
     let rows: Vec<RigRow> = sqlx::query_as(
         r#"
-        SELECT id, user_id, name, make, model, year, fuel_capacity_gal::float8 AS fuel_capacity_gal, notes, created_at, updated_at
+        SELECT id, user_id, name, make, model, year,
+               fuel_capacity_gal::float8 AS fuel_capacity_gal,
+               battery_capacity_wh::float8 AS battery_capacity_wh,
+               solar_peak_watts::float8 AS solar_peak_watts,
+               notes, created_at, updated_at
         FROM rigs
         WHERE user_id = $1
         ORDER BY created_at DESC
@@ -157,9 +169,13 @@ pub async fn create(
 ) -> Result<Rig, VagabondError> {
     let row: RigRow = sqlx::query_as(
         r#"
-        INSERT INTO rigs (user_id, name, make, model, year, fuel_capacity_gal, notes)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, user_id, name, make, model, year, fuel_capacity_gal::float8 AS fuel_capacity_gal, notes, created_at, updated_at
+        INSERT INTO rigs (user_id, name, make, model, year, fuel_capacity_gal, battery_capacity_wh, solar_peak_watts, notes)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, user_id, name, make, model, year,
+                  fuel_capacity_gal::float8 AS fuel_capacity_gal,
+                  battery_capacity_wh::float8 AS battery_capacity_wh,
+                  solar_peak_watts::float8 AS solar_peak_watts,
+                  notes, created_at, updated_at
         "#,
     )
     .bind(user_id)
@@ -168,6 +184,8 @@ pub async fn create(
     .bind(input.model)
     .bind(input.year)
     .bind(input.fuel_capacity_gal)
+    .bind(input.battery_capacity_wh)
+    .bind(input.solar_peak_watts)
     .bind(input.notes)
     .fetch_one(db)
     .await
@@ -183,7 +201,11 @@ pub async fn get_by_id_for_user(
 ) -> Result<Rig, VagabondError> {
     let row: Option<RigRow> = sqlx::query_as(
         r#"
-        SELECT id, user_id, name, make, model, year, fuel_capacity_gal::float8 AS fuel_capacity_gal, notes, created_at, updated_at
+        SELECT id, user_id, name, make, model, year,
+               fuel_capacity_gal::float8 AS fuel_capacity_gal,
+               battery_capacity_wh::float8 AS battery_capacity_wh,
+               solar_peak_watts::float8 AS solar_peak_watts,
+               notes, created_at, updated_at
         FROM rigs
         WHERE id = $1 AND user_id = $2
         "#,
@@ -212,10 +234,16 @@ pub async fn update_for_user(
             model = $5,
             year = $6,
             fuel_capacity_gal = $7,
-            notes = $8,
+            battery_capacity_wh = $8,
+            solar_peak_watts = $9,
+            notes = $10,
             updated_at = now()
         WHERE id = $1 AND user_id = $2
-        RETURNING id, user_id, name, make, model, year, fuel_capacity_gal::float8 AS fuel_capacity_gal, notes, created_at, updated_at
+        RETURNING id, user_id, name, make, model, year,
+                  fuel_capacity_gal::float8 AS fuel_capacity_gal,
+                  battery_capacity_wh::float8 AS battery_capacity_wh,
+                  solar_peak_watts::float8 AS solar_peak_watts,
+                  notes, created_at, updated_at
         "#,
     )
     .bind(id)
@@ -225,6 +253,8 @@ pub async fn update_for_user(
     .bind(input.model)
     .bind(input.year)
     .bind(input.fuel_capacity_gal)
+    .bind(input.battery_capacity_wh)
+    .bind(input.solar_peak_watts)
     .bind(input.notes)
     .fetch_optional(db)
     .await

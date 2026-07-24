@@ -19,30 +19,18 @@ type NavItem = {
   matchPrefix?: string;
 };
 
-const tripNav: NavItem[] = [
+const productNav: NavItem[] = [
+  { href: "/trips", label: "Trips", icon: "trip", matchPrefix: "/trips" },
+  { href: "/rig", label: "Rig", icon: "budget", matchPrefix: "/rig" },
+];
+
+const prototypeNav: NavItem[] = [
   { href: "/lifestyle", label: "Dashboard", icon: "dashboard" },
   { href: "/lifestyle/planner", label: "Trip planner", icon: "planner", count: "GA" },
-  { href: "/lifestyle/trip-detail", label: "Trip detail", icon: "trip" },
   { href: "/lifestyle/budget", label: "Budgets", icon: "budget" },
-];
-
-const inFieldNav: NavItem[] = [
-  { href: "/lifestyle/monitor", label: "Real-time monitor", icon: "monitor", count: "live" },
-  { href: "/lifestyle/field-log", label: "Field log", icon: "log" },
-  { href: "/lifestyle/reconcile", label: "Reconcile", icon: "reconcile", count: "1" },
-];
-
-const catalogNav: NavItem[] = [
-  {
-    href: "/lifestyle/catalog",
-    label: "Locations",
-    icon: "location",
-    count: 142,
-    matchPrefix: "/lifestyle/catalog",
-  },
-];
-
-const systemNav: NavItem[] = [
+  { href: "/lifestyle/monitor", label: "Monitor", icon: "monitor", count: "live" },
+  { href: "/lifestyle/field-log", label: "Field log (mock)", icon: "log" },
+  { href: "/lifestyle/catalog", label: "Locations", icon: "location", matchPrefix: "/lifestyle/catalog" },
   { href: "/lifestyle/settings", label: "Settings", icon: "settings" },
 ];
 
@@ -94,29 +82,24 @@ export function AppShell({ children }: AppShellProps) {
           <div className="brand-mark">V</div>
           <div>
             <div className="brand-name">Vagabond</div>
-            <div className="brand-sub">Lifestyle manager</div>
+            <div className="brand-sub">Trip planning</div>
           </div>
         </div>
 
-        <nav className="nav">
-          <NavSection title="Trip" items={tripNav} pathname={pathname} />
-          <NavSection title="In field" items={inFieldNav} pathname={pathname} />
-          <NavSection title="Catalog" items={catalogNav} pathname={pathname} />
-          <NavSection title="System" items={systemNav} pathname={pathname} />
+        <nav className="nav" aria-label="Primary">
+          <NavSection title="Product" items={productNav} pathname={pathname} />
+          <NavSection title="Prototype" items={prototypeNav} pathname={pathname} />
         </nav>
 
         <div className="sidebar-footer">
-          <span className="dot" /> Self-hosted · <span className="mono" style={{ fontSize: 11 }}>v0.3.1</span>
-          <div style={{ marginLeft: "auto" }}>
-            <AppShellUserMenu compact />
-          </div>
+          <AppShellUserMenu />
         </div>
       </aside>
 
-      <main className="main">
+      <div className="main">
         <ConnectivityBannerFromPrefs />
         {children}
-      </main>
+      </div>
     </div>
   );
 }
