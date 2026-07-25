@@ -37,6 +37,15 @@ const PMTILES_PROTOCOL = "pmtiles";
 const pmtilesProtocol = new Protocol();
 let protocolWired = false;
 
+/** Online OSM-based style for local smoke/dev when no PMTiles archive is configured (ADR-001). */
+export const ONLINE_FALLBACK_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+
+export const MISSING_PMTILES_NOTICE =
+  "Using online basemap (local/dev). Set NEXT_PUBLIC_PMTILES_URL to a local PMTiles archive for offline maps.";
+
+export const FAILED_PMTILES_NOTICE =
+  "Could not load the PMTiles basemap; falling back to online tiles. Check NEXT_PUBLIC_PMTILES_URL and that the archive is reachable.";
+
 function ensurePmtilesProtocolRegistered() {
   if (protocolWired) {
     return;
@@ -46,7 +55,7 @@ function ensurePmtilesProtocolRegistered() {
   protocolWired = true;
 }
 
-function buildFallbackStyle(): maplibregl.StyleSpecification {
+function buildEmptyFallbackStyle(): maplibregl.StyleSpecification {
   return {
     version: 8,
     name: "fallback-dark",
@@ -82,6 +91,26 @@ function buildPmtilesStyle(pmtilesUrl: string): maplibregl.StyleSpecification {
         source: "base",
       },
     ],
+  };
+}
+
+export function resolveInitialBasemap(pmtilesUrl: string | undefined): {
+  style: string | maplibregl.StyleSpecification;
+  notice: string | null;
+  usePmtiles: boolean;
+} {
+  const trimmed = pmtilesUrl?.trim();
+  if (!trimmed) {
+    return {
+      style: ONLINE_FALLBACK_STYLE_URL,
+      notice: MISSING_PMTILES_NOTICE,
+      usePmtiles: false,
+    };
+  }
+  return {
+    style: buildPmtilesStyle(trimmed),
+    notice: null,
+    usePmtiles: true,
   };
 }
 
@@ -139,6 +168,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const [cursorZoom, setCursorZoom] = useState<number>(initialZoom);
   const [mapReady, setMapReady] = useState(false);
   const [basemapError, setBasemapError] = useState<string | null>(null);
+  const [basemapNoticeTone, setBasemapNoticeTone] = useState<"info" | "warn">("info");
 
   const setViewport = useMapStore((state) => state.setViewport);
   const center = useMapStore((state) => state.center);
@@ -146,10 +176,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const bearing = useMapStore((state) => state.bearing);
 
   const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL?.trim();
-  const style = useMemo(
-    () => (pmtilesUrl ? buildPmtilesStyle(pmtilesUrl) : buildFallbackStyle()),
-    [pmtilesUrl],
-  );
+  const initialBasemap = useMemo(() => resolveInitialBasemap(pmtilesUrl), [pmtilesUrl]);
 
   useImperativeHandle(
     ref,
@@ -176,25 +203,21 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     let disposed = false;
 
     const createMap = async () => {
-      let mapStyle = style;
-      setBasemapError(null);
+      let mapStyle: string | maplibregl.StyleSpecification = initialBasemap.style;
+      setBasemapError(initialBasemap.notice);
+      setBasemapNoticeTone("info");
 
-      if (!pmtilesUrl) {
-        setBasemapError(
-          "Offline basemap unavailable: set NEXT_PUBLIC_PMTILES_URL to a local PMTiles archive.",
-        );
-      } else {
+      if (initialBasemap.usePmtiles && pmtilesUrl) {
         ensurePmtilesProtocolRegistered();
         const pmtiles = new PMTiles(pmtilesUrl);
         pmtilesProtocol.add(pmtiles);
         try {
           await pmtiles.getHeader();
         } catch (error) {
-          console.warn("Failed to load PMTiles archive. Rendering fallback map.", error);
-          mapStyle = buildFallbackStyle();
-          setBasemapError(
-            "Could not load the PMTiles basemap. Check NEXT_PUBLIC_PMTILES_URL and that the archive is reachable.",
-          );
+          console.warn("Failed to load PMTiles archive. Falling back to online basemap.", error);
+          mapStyle = ONLINE_FALLBACK_STYLE_URL;
+          setBasemapError(FAILED_PMTILES_NOTICE);
+          setBasemapNoticeTone("warn");
         }
       }
 
@@ -207,14 +230,31 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       const effectiveZoom =
         center[0] === 0 && center[1] === 0 && zoom === 4 ? initialZoom : zoom;
 
-      const map = new maplibregl.Map({
-        container: mapContainerRef.current,
-        style: mapStyle,
-        center: effectiveCenter as LngLatLike,
-        zoom: effectiveZoom,
-        bearing,
-        attributionControl: {},
-      });
+      let map: maplibregl.Map;
+      try {
+        map = new maplibregl.Map({
+          container: mapContainerRef.current,
+          style: mapStyle,
+          center: effectiveCenter as LngLatLike,
+          zoom: effectiveZoom,
+          bearing,
+          attributionControl: {},
+        });
+      } catch (error) {
+        console.warn("Failed to create MapLibre map with selected style. Using empty fallback.", error);
+        setBasemapError(
+          "Basemap failed to load. Set NEXT_PUBLIC_PMTILES_URL for offline tiles, or check network for the online fallback.",
+        );
+        setBasemapNoticeTone("warn");
+        map = new maplibregl.Map({
+          container: mapContainerRef.current,
+          style: buildEmptyFallbackStyle(),
+          center: effectiveCenter as LngLatLike,
+          zoom: effectiveZoom,
+          bearing,
+          attributionControl: {},
+        });
+      }
 
       map.addControl(new maplibregl.NavigationControl(), "top-right");
 
@@ -278,7 +318,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       mapRef.current = null;
       setMapReady(false);
     };
-  }, [bearing, center, initialCenter, initialZoom, onMoveEnd, pmtilesUrl, setViewport, style, zoom]);
+  }, [bearing, center, initialBasemap, initialCenter, initialZoom, onMoveEnd, pmtilesUrl, setViewport, zoom]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -459,8 +499,12 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     <div className="relative h-full w-full">
       {basemapError ? (
         <div
-          role="alert"
-          className="absolute left-3 right-3 top-3 z-10 rounded-md border border-amber-500/40 bg-amber-950/90 px-3 py-2 text-sm text-amber-50 shadow"
+          role="status"
+          className={
+            basemapNoticeTone === "warn"
+              ? "absolute left-3 right-3 top-3 z-10 rounded-md border border-amber-500/40 bg-amber-950/90 px-3 py-2 text-sm text-amber-50 shadow"
+              : "absolute left-3 right-3 top-3 z-10 rounded-md border border-sky-500/30 bg-slate-950/85 px-3 py-2 text-sm text-sky-50 shadow"
+          }
         >
           {basemapError}
         </div>

@@ -78,13 +78,13 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand">
+        <Link href="/" className="brand" aria-label="Vagabond home">
           <div className="brand-mark">V</div>
           <div>
             <div className="brand-name">Vagabond</div>
             <div className="brand-sub">Trip planning</div>
           </div>
-        </div>
+        </Link>
 
         <nav className="nav" aria-label="Primary">
           <NavSection title="Product" items={productNav} pathname={pathname} />

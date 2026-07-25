@@ -90,6 +90,8 @@ button { font-family: inherit; }
   align-items: center;
   gap: 12px;
   padding: 0 8px;
+  color: inherit;
+  text-decoration: none;
 }
 .brand-mark {
   width: 34px;

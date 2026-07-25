@@ -1,19 +1,25 @@
 COMPOSE     := docker compose
+# Profiles must be enabled on down* or Compose ignores those services and leaves
+# their containers running (auth / storage / observability).
+COMPOSE_ALL_PROFILES := --profile auth --profile storage --profile observability
 
 # Expose .env vars (GRAFANA_ADMIN_PASSWORD, GRAFANA_PORT, etc.) to make targets
 -include .env
 export
 
-.PHONY: up down down-clean ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token e2e-list e2e e2e-headed e2e-ui
+.PHONY: up up-all down down-clean ps logs restart-prometheus restart-observability rebuild rebuild-server rebuild-web grafana-sa-token e2e-list e2e e2e-headed e2e-ui
 
 up:
 	$(COMPOSE) up -d --force-recreate
 
+up-all:
+	$(COMPOSE) $(COMPOSE_ALL_PROFILES) up -d --force-recreate
+
 down:
-	$(COMPOSE) down --remove-orphans
+	$(COMPOSE) $(COMPOSE_ALL_PROFILES) down --remove-orphans
 
 down-clean:
-	$(COMPOSE) down --volumes --remove-orphans
+	$(COMPOSE) $(COMPOSE_ALL_PROFILES) down --volumes --remove-orphans
 
 ps:
 	$(COMPOSE) ps
