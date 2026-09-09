@@ -18,7 +18,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.383.0",
-    "maplibre-gl": "^4.3.2",
+    "maplibre-gl": "^6.4.1",
     "next": "15.5.21",
     "next-auth": "^4.24.15",
     "pmtiles": "^3.2.0",
